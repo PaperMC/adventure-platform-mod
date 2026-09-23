@@ -32,7 +32,7 @@ jetbrainsAnnotations = "org.jetbrains:annotations:26.1.0"
 option = { module = "net.kyori:option", version = "1.1.0" }
 
 # mod-shared
-mixin = "net.fabricmc:sponge-mixin:0.17.4+mixin.0.8.7"
+mixin = "net.fabricmc:sponge-mixin:0.17.3+mixin.0.8.7"
 mixinExtras = "io.github.llamalad7:mixinextras-common:0.5.5"
 # For Renovate, do not use directly
 zNeoform = { module = "net.neoforged:neoform", version.ref = "neoform" }
