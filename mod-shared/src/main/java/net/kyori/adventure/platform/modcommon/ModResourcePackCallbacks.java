@@ -1,7 +1,7 @@
 /*
  * This file is part of adventure-platform-mod, licensed under the MIT License.
  *
- * Copyright (c) 2023-2024 KyoriPowered
+ * Copyright (c) 2023-2026 KyoriPowered
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,12 +27,14 @@ import java.util.UUID;
 import net.kyori.adventure.identity.Identity;
 import net.kyori.adventure.platform.modcommon.impl.ControlledAudience;
 import net.kyori.adventure.platform.modcommon.impl.server.MinecraftServerAudiencesImpl;
+import net.kyori.adventure.platform.modcommon.impl.server.ServerCommonPacketListenerImplBridge;
 import net.kyori.adventure.resource.ResourcePackCallback;
 import net.kyori.adventure.resource.ResourcePackStatus;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerCommonPacketListenerImpl;
+import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,14 +75,19 @@ public final class ModResourcePackCallbacks {
     return (uuid, status, audience) -> {
       if (!status.intermediate() && status != ResourcePackStatus.SUCCESSFULLY_LOADED) { // we've reached a terminal, non-successful state
         // now we attempt to extract a connection that can be kicked -- assuming that it's players that will be sent a resource pack
-        if (!(audience instanceof ControlledAudience controlled)) {
+        final ServerCommonPacketListenerImpl kicker;
+        final MinecraftAudiences controller;
+        if (audience instanceof ServerConfigurationPacketListenerImpl configuration) { // when you send a resource pack during the configuration phase
+          kicker = configuration;
+          controller = MinecraftServerAudiences.of(((ServerCommonPacketListenerImplBridge) configuration).adventure$server());
+        } else if (!(audience instanceof ControlledAudience controlled)) {
           LOGGER.debug("Audience {} was not a ControlledAudience, we cannot kick them", audience);
           return;
-        }
-        final ServerCommonPacketListenerImpl kicker;
-        if (audience instanceof ServerPlayer player) { // when you send a resource pack via the Audience implemented on ServerPlayer
+        } else if (audience instanceof ServerPlayer player) { // when you send a resource pack via the Audience implemented on ServerPlayer
           kicker = player.connection;
+          controller = controlled.controller();
         } else {
+          controller = controlled.controller();
           final @Nullable UUID id = audience.get(Identity.UUID).orElse(null);
           if (id == null) return; // not a player?
           if (!(controlled.controller() instanceof MinecraftServerAudiencesImpl server)) return;
@@ -92,7 +99,7 @@ public final class ModResourcePackCallbacks {
         }
 
         LOGGER.debug("Audience {} did not successfully apply a resource pack with ID {}, kicking with message: {}", kicker.getOwner(), uuid, kickMessage);
-        kicker.disconnect(controlled.controller().asNative(kickMessage));
+        kicker.disconnect(controller.asNative(kickMessage));
       }
     };
   }

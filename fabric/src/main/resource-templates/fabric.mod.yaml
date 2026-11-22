@@ -39,6 +39,7 @@ custom:
     net/minecraft/world/entity/player/Player: [ net/kyori/adventure/platform/modcommon/IdentifiedAtRuntime ]
     net/minecraft/server/rcon/RconConsoleSource: [ net/kyori/adventure/audience/Audience ]
     net/minecraft/server/level/ServerPlayer: [ net/kyori/adventure/audience/Audience ]
+    net/minecraft/server/network/ServerConfigurationPacketListenerImpl: [ net/kyori/adventure/audience/Audience ]
     net/minecraft/client/player/LocalPlayer: [ net/kyori/adventure/audience/Audience ]
     net/minecraft/resources/Identifier: [ net/kyori/adventure/key/Key ]
     net/minecraft/sounds/SoundEvent: [ net/kyori/adventure/sound/Sound<%= '$' %>Type ]

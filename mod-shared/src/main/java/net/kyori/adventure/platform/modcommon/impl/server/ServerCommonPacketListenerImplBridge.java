@@ -1,7 +1,7 @@
 /*
  * This file is part of adventure-platform-mod, licensed under the MIT License.
  *
- * Copyright (c) 2023-2024 KyoriPowered
+ * Copyright (c) 2023-2026 KyoriPowered
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ package net.kyori.adventure.platform.modcommon.impl.server;
 import java.util.UUID;
 import net.kyori.adventure.resource.ResourcePackCallback;
 import net.minecraft.network.Connection;
+import net.minecraft.server.MinecraftServer;
 import org.jetbrains.annotations.NotNull;
 
 public interface ServerCommonPacketListenerImplBridge {
@@ -35,4 +36,6 @@ public interface ServerCommonPacketListenerImplBridge {
   void adventure$bridge$registerPackCallback(final @NotNull UUID id, final @NotNull MinecraftServerAudiencesImpl controller, final @NotNull ResourcePackCallback cb);
 
   Connection adventure$connection();
+
+  MinecraftServer adventure$server();
 }

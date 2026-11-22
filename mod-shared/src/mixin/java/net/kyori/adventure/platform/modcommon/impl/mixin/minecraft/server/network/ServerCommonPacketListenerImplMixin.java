@@ -35,9 +35,12 @@ import net.kyori.adventure.platform.modcommon.impl.server.ServerCommonPacketList
 import net.kyori.adventure.resource.ResourcePackCallback;
 import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
 import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.ServerboundCustomClickActionPacket;
 import net.minecraft.network.protocol.common.ServerboundResourcePackPacket;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerCommonPacketListenerImpl;
+import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Final;
@@ -54,12 +57,19 @@ public abstract class ServerCommonPacketListenerImplMixin implements ServerCommo
 
   // @formatter:off
   @Shadow @Final protected Connection connection;
+  @Shadow @Final protected MinecraftServer server;
+  @Shadow public abstract void shadow$send(Packet<?> packet);
   @Shadow protected abstract GameProfile shadow$playerProfile();
   // @formatter:on
 
   @Override
   public Connection adventure$connection() {
     return this.connection;
+  }
+
+  @Override
+  public MinecraftServer adventure$server() {
+    return this.server;
   }
 
   @Override
@@ -86,7 +96,7 @@ public abstract class ServerCommonPacketListenerImplMixin implements ServerCommo
       state.cb().packEventReceived(
         pkt.id(),
         GameEnums.RESOURCE_PACK_STATUS.asAdventure(pkt.action()),
-        state.controller().player(this.shadow$playerProfile().id())
+        (Object) this instanceof final ServerConfigurationPacketListenerImpl configuration ? (Audience) configuration : state.controller().player(this.shadow$playerProfile().id())
       );
       ci.cancel();
     }
@@ -94,8 +104,13 @@ public abstract class ServerCommonPacketListenerImplMixin implements ServerCommo
 
   @Inject(method = "handleCustomClickAction(Lnet/minecraft/network/protocol/common/ServerboundCustomClickActionPacket;)V", at = @At("TAIL"))
   private void adventure$handleClickCallback(final ServerboundCustomClickActionPacket pkt, final CallbackInfo ci) {
-    if ((Object) this instanceof final ServerGamePacketListenerImpl game) {
-      ClickCallbackRegistry.INSTANCE.handleClick(pkt.id(), pkt.payload(), (Audience) game.player);
+    final Audience audience = switch ((Object) this) {
+      case final ServerGamePacketListenerImpl game -> (Audience) game.player;
+      case final ServerConfigurationPacketListenerImpl configuration -> (Audience) configuration;
+      default -> null;
+    };
+    if (audience != null) {
+      ClickCallbackRegistry.INSTANCE.handleClick(pkt.id(), pkt.payload(), audience);
     }
   }
 }

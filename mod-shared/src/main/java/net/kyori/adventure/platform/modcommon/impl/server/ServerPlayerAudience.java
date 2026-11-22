@@ -24,11 +24,8 @@
 package net.kyori.adventure.platform.modcommon.impl.server;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.chat.ChatType;
@@ -45,8 +42,6 @@ import net.kyori.adventure.platform.modcommon.impl.VanillaDialog;
 import net.kyori.adventure.platform.modcommon.impl.accessor.minecraft.network.ServerGamePacketListenerImplAccess;
 import net.kyori.adventure.platform.modcommon.impl.accessor.minecraft.world.level.LevelAccess;
 import net.kyori.adventure.pointer.Pointers;
-import net.kyori.adventure.resource.ResourcePackCallback;
-import net.kyori.adventure.resource.ResourcePackInfo;
 import net.kyori.adventure.resource.ResourcePackRequest;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.sound.SoundStop;
@@ -54,7 +49,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
 import net.kyori.adventure.title.TitlePart;
-import net.kyori.adventure.util.MonkeyBars;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.DataComponents;
@@ -64,8 +58,6 @@ import net.minecraft.network.chat.PlayerChatMessage;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.ClientCommonPacketListener;
 import net.minecraft.network.protocol.common.ClientboundClearDialogPacket;
-import net.minecraft.network.protocol.common.ClientboundResourcePackPopPacket;
-import net.minecraft.network.protocol.common.ClientboundResourcePackPushPacket;
 import net.minecraft.network.protocol.common.ClientboundShowDialogPacket;
 import net.minecraft.network.protocol.game.ClientboundBundlePacket;
 import net.minecraft.network.protocol.game.ClientboundClearTitlesPacket;
@@ -365,40 +357,17 @@ public class ServerPlayerAudience implements ControlledAudience {
 
   @Override
   public void sendResourcePacks(final @NotNull ResourcePackRequest request) {
-    final List<Packet<ClientCommonPacketListener>> packets = new ArrayList<>(request.packs().size());
-    if (request.replace()) {
-      packets.add(new ClientboundResourcePackPopPacket(Optional.empty()));
-    }
-
-    final net.minecraft.network.chat.@Nullable Component prompt = this.asNativeNullable(request.prompt());
-    for (final Iterator<ResourcePackInfo> it = request.packs().iterator(); it.hasNext();) {
-      final ResourcePackInfo pack = it.next();
-      packets.add(new ClientboundResourcePackPushPacket(
-        pack.id(),
-        pack.uri().toASCIIString(),
-        pack.hash(),
-        request.required(),
-        it.hasNext() ? Optional.empty() : Optional.ofNullable(prompt)
-      ));
-
-      if (request.callback() != ResourcePackCallback.noOp()) {
-        ((ServerCommonPacketListenerImplBridge) this.player.connection).adventure$bridge$registerPackCallback(pack.id(), this.controller, request.callback());
-      }
-    }
-
-    this.sendBundle(packets);
+    this.sendBundle(ServerResourcePacks.push(request, this.controller, (ServerCommonPacketListenerImplBridge) this.player.connection));
   }
 
   @Override
   public void removeResourcePacks(final @NotNull UUID id, final @NotNull UUID@NotNull... others) {
-    this.sendBundle(
-      MonkeyBars.nonEmptyArrayToList(pack -> new ClientboundResourcePackPopPacket(Optional.of(pack)), id, others)
-    );
+    this.sendBundle(ServerResourcePacks.pop(id, others));
   }
 
   @Override
   public void clearResourcePacks() {
-    this.sendPacket(new ClientboundResourcePackPopPacket(Optional.empty()));
+    this.sendPacket(ServerResourcePacks.clear());
   }
 
   @Override
