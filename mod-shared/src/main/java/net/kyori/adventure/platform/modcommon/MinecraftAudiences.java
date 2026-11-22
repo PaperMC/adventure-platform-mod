@@ -25,6 +25,7 @@ package net.kyori.adventure.platform.modcommon;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.serialization.JavaOps;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -60,6 +61,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -244,13 +246,27 @@ public interface MinecraftAudiences {
   /**
    * Returns a {@link HoverEvent} that displays the provided {@link ItemStack}.
    *
+   * <p>The item's data components are tied to this instance's registries.</p>
+   *
    * @param stack the item stack
    * @return hover event
-   * @since 6.0.0
+   * @since 7.3.0
    */
-  @SuppressWarnings("unchecked")
-  static @NotNull HoverEvent<HoverEvent.ShowItem> asHoverEvent(final @NotNull ItemStack stack) {
-    return ((HoverEventSource<HoverEvent.ShowItem>) (Object) stack).asHoverEvent();
+  default @NotNull HoverEvent<HoverEvent.ShowItem> asHoverEvent(final @NotNull ItemStack stack) {
+    return ModDataComponentValue.showItem(stack.typeHolder(), stack.getCount(), stack.getComponentsPatch(), ((MinecraftAudiencesInternal) this).registryAccess().createSerializationContext(JavaOps.INSTANCE));
+  }
+
+  /**
+   * Returns a {@link HoverEvent} that displays the provided {@link ItemStackTemplate}.
+   *
+   * <p>The item's data components are tied to this instance's registries.</p>
+   *
+   * @param template the item stack template
+   * @return hover event
+   * @since 7.3.0
+   */
+  default @NotNull HoverEvent<HoverEvent.ShowItem> asHoverEvent(final @NotNull ItemStackTemplate template) {
+    return ModDataComponentValue.showItem(template.typeHolder(), template.count(), template.components(), ((MinecraftAudiencesInternal) this).registryAccess().createSerializationContext(JavaOps.INSTANCE));
   }
 
   /**
@@ -328,14 +344,16 @@ public interface MinecraftAudiences {
    *
    * <p>The data component value must not be a {@link DataComponentType#isTransient() transient} one.</p>
    *
+   * <p>The value is tied to this instance's registries.</p>
+   *
    * @param type the component type
    * @param value the value to wrap
    * @param <T> the value type
    * @return the wrapped value
-   * @since 6.0.0
+   * @since 7.3.0
    */
-  static @NotNull <T> DataComponentValue dataComponentValue(final @NotNull DataComponentType<T> type, final @NotNull T value) {
-    return new ModDataComponentValue.Present<>(value, type.codecOrThrow());
+  default @NotNull <T> DataComponentValue dataComponentValue(final @NotNull DataComponentType<T> type, final @NotNull T value) {
+    return new ModDataComponentValue.Present<>(value, type.codecOrThrow(), ((MinecraftAudiencesInternal) this).registryAccess().createSerializationContext(JavaOps.INSTANCE));
   }
 
   /**

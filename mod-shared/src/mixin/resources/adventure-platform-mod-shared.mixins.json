@@ -8,7 +8,6 @@
     "minecraft.network.chat.ComponentSerializationMixin",
     "minecraft.network.chat.MutableComponentMixin",
     "minecraft.network.chat.PlayerChatMessageMixin",
-    "minecraft.resources.DelegatingOpsMixin",
     "minecraft.resources.IdentifierMixin",
     "minecraft.resources.ResourceKeyMixin",
     "minecraft.server.MinecraftServerMixin",
@@ -19,8 +18,6 @@
     "minecraft.server.rcon.RconConsoleSourceMixin",
     "minecraft.sounds.SoundEventMixin",
     "minecraft.world.entity.EntityMixin",
-    "minecraft.world.entity.player.PlayerMixin",
-    "minecraft.world.item.ItemStackMixin",
-    "minecraft.world.item.ItemStackTemplateMixin"
+    "minecraft.world.entity.player.PlayerMixin"
   ]
 }

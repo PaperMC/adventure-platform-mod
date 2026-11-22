@@ -33,6 +33,7 @@ import java.util.UUID;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.chat.ChatType;
 import net.kyori.adventure.chat.SignedMessage;
+import net.kyori.adventure.dialog.DialogLike;
 import net.kyori.adventure.inventory.Book;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.platform.modcommon.MinecraftAudiences;
@@ -40,6 +41,7 @@ import net.kyori.adventure.platform.modcommon.impl.AdventureCommon;
 import net.kyori.adventure.platform.modcommon.impl.ControlledAudience;
 import net.kyori.adventure.platform.modcommon.impl.GameEnums;
 import net.kyori.adventure.platform.modcommon.impl.MinecraftAudiencesInternal;
+import net.kyori.adventure.platform.modcommon.impl.VanillaDialog;
 import net.kyori.adventure.platform.modcommon.impl.accessor.minecraft.network.ServerGamePacketListenerImplAccess;
 import net.kyori.adventure.platform.modcommon.impl.accessor.minecraft.world.level.LevelAccess;
 import net.kyori.adventure.pointer.Pointers;
@@ -61,8 +63,10 @@ import net.minecraft.network.chat.OutgoingChatMessage;
 import net.minecraft.network.chat.PlayerChatMessage;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.ClientCommonPacketListener;
+import net.minecraft.network.protocol.common.ClientboundClearDialogPacket;
 import net.minecraft.network.protocol.common.ClientboundResourcePackPopPacket;
 import net.minecraft.network.protocol.common.ClientboundResourcePackPushPacket;
+import net.minecraft.network.protocol.common.ClientboundShowDialogPacket;
 import net.minecraft.network.protocol.game.ClientboundBundlePacket;
 import net.minecraft.network.protocol.game.ClientboundClearTitlesPacket;
 import net.minecraft.network.protocol.game.ClientboundDeleteChatPacket;
@@ -395,6 +399,16 @@ public class ServerPlayerAudience implements ControlledAudience {
   @Override
   public void clearResourcePacks() {
     this.sendPacket(new ClientboundResourcePackPopPacket(Optional.empty()));
+  }
+
+  @Override
+  public void showDialog(final @NotNull DialogLike dialog) {
+    this.sendPacket(new ClientboundShowDialogPacket(VanillaDialog.unwrap(dialog)));
+  }
+
+  @Override
+  public void closeDialog() {
+    this.sendPacket(ClientboundClearDialogPacket.INSTANCE);
   }
 
   private net.minecraft.network.chat.@Nullable Component asNativeNullable(final @Nullable Component comp) {

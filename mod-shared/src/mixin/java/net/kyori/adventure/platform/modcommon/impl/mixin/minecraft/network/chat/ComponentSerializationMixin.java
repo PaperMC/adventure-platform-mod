@@ -39,7 +39,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ComponentSerialization.class)
 public abstract class ComponentSerializationMixin {
   // Inject our component logic into the codec
-  // This is pretty inefficient for non-JsonOps codecs, but it is a minimal change which allows us to continue functioning.
   @Inject(method = "createCodec", at = @At("RETURN"), cancellable = true)
   private static void adventure$wrapCodec(final Codec<Component> recursive, final CallbackInfoReturnable<Codec<Component>> cir) {
     final Codec<Component> original = cir.getReturnValue();

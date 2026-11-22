@@ -34,14 +34,19 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Comparator;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import net.kyori.adventure.key.Key;
+import net.kyori.adventure.nbt.api.BinaryTagHolder;
 import net.kyori.adventure.platform.modcommon.impl.AdventureCommon;
 import net.kyori.adventure.platform.modcommon.impl.NonWrappingComponentSerializer;
 import net.kyori.adventure.platform.modcommon.impl.WrappedComponent;
+import net.kyori.adventure.platform.modcommon.impl.nbt.ModDataComponentValue;
 import net.kyori.adventure.pointer.Pointered;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.DataComponentValue;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -49,15 +54,23 @@ import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.kyori.adventure.translation.GlobalTranslator;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.TagParser;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static net.kyori.adventure.text.format.Style.style;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Named.named;
 
@@ -71,9 +84,9 @@ class ComponentConversionTest extends BootstrappedTest {
       Component.text("Hello").append(Component.text(" friends", TextColor.color(0xaabbcc))),
       Component.keybind("key.jump"),
       //Component.text("Hello world", style(new ItemStack(Items.ACACIA_LOG, 1).asHoverEvent())),
-      Component.text("Hello world", style(new ItemStackTemplate(Items.ACACIA_LOG, 1).asHoverEvent())),
+      Component.text("Hello world", style(showItem(new ItemStackTemplate(Items.ACACIA_LOG, 1)))),
       //Component.text("I've got a hover!", style(new ItemStack(Items.ACACIA_LOG.builtInRegistryHolder(), 1, DataComponentPatch.builder().set(DataComponents.ITEM_NAME, net.minecraft.network.chat.Component.literal("test")).build()).asHoverEvent()))
-      Component.text("I've got a hover!", style(new ItemStackTemplate(Items.ACACIA_LOG.builtInRegistryHolder(), 1, DataComponentPatch.builder().set(DataComponents.ITEM_NAME, net.minecraft.network.chat.Component.literal("test")).build()).asHoverEvent()))
+      Component.text("I've got a hover!", style(showItem(new ItemStackTemplate(Items.ACACIA_LOG.builtInRegistryHolder(), 1, DataComponentPatch.builder().set(DataComponents.ITEM_NAME, net.minecraft.network.chat.Component.literal("test")).build()))))
     )
       .map(comp -> named(MiniMessage.miniMessage().serialize(comp), comp));
   }
@@ -130,6 +143,44 @@ class ComponentConversionTest extends BootstrappedTest {
     assertEquals(wrapped, wrapped2, "two wrapped components should be equal");
     assertEquals(deepConverted, wrapped, "deep should equal wrapped");
     assertEquals(wrapped, deepConverted, "wrapped should equal deep");
+  }
+
+  @Test
+  void testCustomClickPayloadRoundTrip() throws Exception {
+    final Component input = Component.text("Click me")
+      .clickEvent(net.kyori.adventure.text.event.ClickEvent.custom(Key.key("adventure", "test"), BinaryTagHolder.binaryTagHolder("{a:1b,b:[I;1,2],c:\"str\",d:{e:[1.5d,2.5d]}}")));
+    final net.minecraft.network.chat.Component converted = NonWrappingComponentSerializer.INSTANCE.serialize(input);
+    final ClickEvent.Custom custom = assertInstanceOf(ClickEvent.Custom.class, converted.getStyle().getClickEvent());
+    assertEquals(TagParser.parseCompoundFully("{a:1b,b:[I;1,2],c:\"str\",d:{e:[1.5d,2.5d]}}"), custom.payload().orElseThrow());
+
+    final Component roundTripped = NonWrappingComponentSerializer.INSTANCE.deserialize(converted);
+    assertEquals(NonWrappingComponentSerializer.INSTANCE.serialize(roundTripped), converted);
+  }
+
+  // enchantments reference a datapack registry, so they can only be converted with registry context
+  @Test
+  void testRegistryDependentDataComponentRoundTrip() {
+    final NonWrappingComponentSerializer serializer = new NonWrappingComponentSerializer(BootstrappedTest::lookup);
+    final DataComponentValue.TagSerializable enchantments = () -> BinaryTagHolder.binaryTagHolder("{\"minecraft:sharpness\":3}");
+    final Component input = Component.text("Hover").hoverEvent(HoverEvent.showItem(Key.key("diamond_sword"), 1, Map.of(Key.key("enchantments"), enchantments)));
+
+    final net.minecraft.network.chat.Component converted = serializer.serialize(input);
+    final net.minecraft.network.chat.HoverEvent.ShowItem nativeHover = assertInstanceOf(net.minecraft.network.chat.HoverEvent.ShowItem.class, converted.getStyle().getHoverEvent());
+    // item prototypes aren't bound in tests, so read the patch directly
+    final ItemEnchantments nativeEnchantments = nativeHover.item().components().split().added().get(DataComponents.ENCHANTMENTS);
+    assertEquals(3, nativeEnchantments.getLevel(lookup().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.SHARPNESS)));
+
+    final Component roundTripped = serializer.deserialize(converted);
+    final HoverEvent.ShowItem hover = assertInstanceOf(HoverEvent.ShowItem.class, roundTripped.hoverEvent().value());
+    final DataComponentValue value = hover.dataComponents().get(Key.key("enchantments"));
+    final DataComponentValue.TagSerializable tag = assertInstanceOf(DataComponentValue.TagSerializable.class, value);
+    assertEquals("{\"minecraft:sharpness\":3}", tag.asBinaryTag().string());
+    assertTrue(GsonComponentSerializer.gson().serialize(roundTripped).contains("\"minecraft:sharpness\":3"));
+    assertEquals(converted, serializer.serialize(roundTripped));
+  }
+
+  private static HoverEvent<HoverEvent.ShowItem> showItem(final ItemStackTemplate template) {
+    return ModDataComponentValue.showItem(template.typeHolder(), template.count(), template.components(), lookup().createSerializationContext(JsonOps.INSTANCE));
   }
 
   private static void assertJsonTreesEqual(final JsonElement expected, final JsonElement actual) {

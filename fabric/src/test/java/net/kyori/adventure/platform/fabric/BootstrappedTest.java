@@ -1,7 +1,7 @@
 /*
  * This file is part of adventure-platform-mod, licensed under the MIT License.
  *
- * Copyright (c) 2023-2024 KyoriPowered
+ * Copyright (c) 2023-2026 KyoriPowered
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +27,7 @@ import com.google.gson.JsonElement;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.data.registries.VanillaRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.resources.RegistryOps;
@@ -37,14 +36,14 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 
 abstract class BootstrappedTest {
-  private static RegistryAccess registries;
+  private static HolderLookup.Provider registries;
 
   @BeforeAll
   static void bootstrapGame() {
     SharedConstants.tryDetectVersion();
     Bootstrap.bootStrap();
     Bootstrap.validate();
-    registries = RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
+    registries = VanillaRegistries.createWorldLookup();
   }
 
   protected static HolderLookup.Provider lookup() {

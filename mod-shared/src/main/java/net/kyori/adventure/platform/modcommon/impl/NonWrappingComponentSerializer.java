@@ -1,7 +1,7 @@
 /*
  * This file is part of adventure-platform-mod, licensed under the MIT License.
  *
- * Copyright (c) 2020-2025 KyoriPowered
+ * Copyright (c) 2020-2026 KyoriPowered
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,17 +24,15 @@
 package net.kyori.adventure.platform.modcommon.impl;
 
 import com.google.common.base.Suppliers;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
-import com.mojang.serialization.JsonOps;
+import com.mojang.serialization.JavaOps;
 import java.util.function.Supplier;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.ComponentSerializer;
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.ComponentSerialization;
+import net.minecraft.resources.RegistryOps;
 import org.jetbrains.annotations.NotNull;
 
 public final class NonWrappingComponentSerializer implements ComponentSerializer<Component, Component, net.minecraft.network.chat.Component> {
@@ -61,10 +59,9 @@ public final class NonWrappingComponentSerializer implements ComponentSerializer
       return ((WrappedComponent) input).wrapped();
     }
 
-    return GsonComponentSerializer.gson().deserializeFromTree(
-      ComponentSerialization.CODEC.encodeStart(this.holderProvider.get().createSerializationContext(JsonOps.INSTANCE), input)
-        .getOrThrow(JsonParseException::new)
-    );
+    final RegistryOps<Object> ops = this.holderProvider.get().createSerializationContext(JavaOps.INSTANCE);
+    return AdventureCodecs.COMPONENT_CODEC.parse(ops, ComponentSerialization.CODEC.encodeStart(ops, input).getOrThrow(IllegalStateException::new))
+      .getOrThrow(IllegalStateException::new);
   }
 
   @Override
@@ -72,11 +69,9 @@ public final class NonWrappingComponentSerializer implements ComponentSerializer
     BYPASS_IS_ALLOWED_FROM_SERVER.set(true);
     final net.minecraft.network.chat.Component mutableComponent;
     try {
-      final JsonElement jsonElement = GsonComponentSerializer.gson().serializeToTree(component);
-      mutableComponent = ComponentSerialization.CODEC
-        .decode(this.holderProvider.get().createSerializationContext(JsonOps.INSTANCE), jsonElement)
-        .getOrThrow(JsonParseException::new)
-        .getFirst();
+      final RegistryOps<Object> ops = this.holderProvider.get().createSerializationContext(JavaOps.INSTANCE);
+      mutableComponent = ComponentSerialization.CODEC.parse(ops, AdventureCodecs.COMPONENT_CODEC.encodeStart(ops, component).getOrThrow(IllegalStateException::new))
+        .getOrThrow(IllegalStateException::new);
     } finally {
       BYPASS_IS_ALLOWED_FROM_SERVER.set(false);
     }

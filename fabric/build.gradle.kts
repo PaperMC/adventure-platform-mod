@@ -106,6 +106,7 @@ sourceSets {
 }
 
 loom {
+  accessWidenerPath = file("src/main/resources/adventure-platform-fabric.accesswidener")
   runs {
     register("testmodClient") {
       sourceSet = "testmod"

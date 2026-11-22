@@ -23,20 +23,16 @@
  */
 package net.kyori.adventure.platform.modcommon.impl;
 
-import com.google.gson.JsonElement;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
-import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.Lifecycle;
 import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.platform.modcommon.impl.server.FriendlyByteBufBridge;
 import net.kyori.adventure.pointer.Pointered;
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.RegistryOps;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -52,21 +48,13 @@ public final class ComponentCodecs {
   public static Codec<Component> unwrappingToNative(final Codec<Component> original) {
     return new Codec<Component>() {
       @Override
-      @SuppressWarnings("unchecked")
       public <T> DataResult<T> encode(final Component input, final DynamicOps<T> ops, final T prefix) {
         if (input instanceof WrappedComponent w) {
           if (w.deepConvertedIfPresent() != null) { // already converted
             return original.encode(w.deepConvertedIfPresent(), ops, prefix);
           }
 
-          final JsonElement json = GsonComponentSerializer.gson().serializeToTree(w.wrapped());
-          if (ops instanceof JsonOps) {
-            return DataResult.success((T) json);
-          } else if (ops instanceof RegistryOps<?> && ops instanceof DelegatingOpsBridge deleg && deleg.adventure$bridge$delegate() instanceof JsonOps) {
-            return DataResult.success((T) json);
-          } else {
-            return DataResult.success(JsonOps.INSTANCE.convertTo(ops, json));
-          }
+          return AdventureCodecs.COMPONENT_CODEC.encode(w.wrapped(), ops, prefix);
         }
 
         return original.encode(input, ops, prefix);
