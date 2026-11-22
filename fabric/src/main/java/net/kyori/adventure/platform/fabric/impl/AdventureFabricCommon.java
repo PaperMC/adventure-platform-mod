@@ -31,7 +31,6 @@ import java.nio.file.Path;
 import java.util.Locale;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.kyori.adventure.platform.fabric.CollectPointersCallback;
@@ -40,7 +39,6 @@ import net.kyori.adventure.platform.fabric.impl.server.ServerPlayerBridge;
 import net.kyori.adventure.platform.modcommon.ComponentArgumentType;
 import net.kyori.adventure.platform.modcommon.KeyArgumentType;
 import net.kyori.adventure.platform.modcommon.impl.AdventureCommon;
-import net.kyori.adventure.platform.modcommon.impl.ClickCallbackRegistry;
 import net.kyori.adventure.platform.modcommon.impl.PlatformHooks;
 import net.kyori.adventure.platform.modcommon.impl.SidedProxy;
 import net.kyori.adventure.pointer.Pointered;
@@ -91,10 +89,6 @@ public class AdventureFabricCommon implements ModInitializer {
   @Override
   public void onInitialize() {
     this.setupCustomArgumentTypes();
-
-    CommandRegistrationCallback.EVENT.register((dispatcher, registries, env) -> {
-      ClickCallbackRegistry.INSTANCE.registerToDispatcher(dispatcher);
-    });
 
     AdventureCommon.scheduleClickCallbackCleanup();
 

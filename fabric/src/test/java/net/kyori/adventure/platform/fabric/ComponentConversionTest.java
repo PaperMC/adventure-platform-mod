@@ -40,11 +40,13 @@ import java.util.stream.Stream;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.nbt.api.BinaryTagHolder;
 import net.kyori.adventure.platform.modcommon.impl.AdventureCommon;
+import net.kyori.adventure.platform.modcommon.impl.ClickCallbackRegistry;
 import net.kyori.adventure.platform.modcommon.impl.NonWrappingComponentSerializer;
 import net.kyori.adventure.platform.modcommon.impl.WrappedComponent;
 import net.kyori.adventure.platform.modcommon.impl.nbt.ModDataComponentValue;
 import net.kyori.adventure.pointer.Pointered;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickCallback;
 import net.kyori.adventure.text.event.DataComponentValue;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -52,9 +54,11 @@ import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.kyori.adventure.translation.GlobalTranslator;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.ComponentSerialization;
@@ -143,6 +147,18 @@ class ComponentConversionTest extends BootstrappedTest {
     assertEquals(wrapped, wrapped2, "two wrapped components should be equal");
     assertEquals(deepConverted, wrapped, "deep should equal wrapped");
     assertEquals(wrapped, deepConverted, "wrapped should equal deep");
+  }
+
+  @Test
+  void testClickCallbackConvertsToCustomClickAction() {
+    final Component input = Component.text("Click me")
+      .clickEvent(ClickCallbackRegistry.INSTANCE.register(audience -> {}, ClickCallback.Options.builder().build()));
+    final net.minecraft.network.chat.Component converted = NonWrappingComponentSerializer.INSTANCE.serialize(input);
+
+    final ClickEvent.Custom custom = assertInstanceOf(ClickEvent.Custom.class, converted.getStyle().getClickEvent());
+    assertEquals(AdventureCommon.res("click_callback"), custom.id());
+    final Tag payload = custom.payload().orElseThrow();
+    assertTrue(payload.asCompound().flatMap(tag -> tag.read("id", UUIDUtil.CODEC)).isPresent(), () -> "payload missing callback id: " + payload);
   }
 
   @Test

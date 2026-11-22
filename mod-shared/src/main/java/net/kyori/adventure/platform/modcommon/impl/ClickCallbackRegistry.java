@@ -1,7 +1,7 @@
 /*
  * This file is part of adventure-platform-mod, licensed under the MIT License.
  *
- * Copyright (c) 2023-2024 KyoriPowered
+ * Copyright (c) 2023-2026 KyoriPowered
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,136 +23,119 @@
  */
 package net.kyori.adventure.platform.modcommon.impl;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalListener;
-import com.mojang.brigadier.Command;
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.logging.LogUtils;
-import java.time.Instant;
-import java.util.HashSet;
-import java.util.Set;
+import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentHashMap;
 import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.platform.modcommon.AdventureCommandSourceStack;
-import net.kyori.adventure.text.Component;
+import net.kyori.adventure.nbt.api.BinaryTagHolder;
+import net.kyori.adventure.platform.modcommon.MinecraftAudiences;
+import net.kyori.adventure.platform.modcommon.impl.nbt.ModDataComponentValue;
 import net.kyori.adventure.text.event.ClickCallback;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.UuidArgument;
-import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.Identifier;
 
 public final class ClickCallbackRegistry {
-  private static final Logger LOGGER = LogUtils.getLogger();
-
   public static final ClickCallbackRegistry INSTANCE = new ClickCallbackRegistry();
 
   public static final int CLEAN_UP_RATE = 30 /* seconds */;
 
-  private static final String UUID_ARG = "uuid";
-  private static final String COMMAND_NAME = "adventure_callback";
-  private static final Component FAILURE_MESSAGE = Component.text("No callback with that ID could be found! You may have used it too many times, or it may have expired.", NamedTextColor.RED);
+  private static final Identifier CLICK_CALLBACK_ID = AdventureCommon.res("click_callback");
+  private static final String ID_KEY = "id";
 
-  private final Cache<UUID, CallbackRegistration> registrations = CacheBuilder.newBuilder()
-    .expireAfterWrite(24, TimeUnit.HOURS)
-    .maximumSize(1024) // to avoid unbounded growth
-    .removalListener((RemovalListener<UUID, CallbackRegistration>) notification -> LOGGER.debug("Removing callback {} from cache for reason {}", notification.getKey(), notification.getCause()))
-    .build();
+  private final Map<UUID, StoredCallback> callbacks = new ConcurrentHashMap<>();
 
   private ClickCallbackRegistry() {
   }
 
   /**
-   * Register a callback, returning the command to be attached to a click event.
+   * Register a callback, returning the click event that will trigger it.
+   *
+   * <p>Callbacks use custom click actions, which vanilla clients send to the server without any confirmation.</p>
    *
    * @param callback the callback to register
    * @param options options
-   * @return a new callback handler command
-   * @since 6.0.0
+   * @return a new click event
    */
-  public String register(final ClickCallback<Audience> callback, final ClickCallback.Options options) {
+  public ClickEvent<?> register(final ClickCallback<Audience> callback, final ClickCallback.Options options) {
     final UUID id = UUID.randomUUID();
-    final CallbackRegistration reg = new CallbackRegistration(
-      options,
-      callback,
-      Instant.now().plus(options.lifetime()),
-      new AtomicInteger()
-    );
+    this.callbacks.put(id, new StoredCallback(callback, options));
 
-    this.registrations.put(id, reg);
-
-    return "/" + COMMAND_NAME + " " + id;
-  }
-
-  public void registerToDispatcher(final CommandDispatcher<CommandSourceStack> dispatcher) {
-    dispatcher.register(Commands.literal(COMMAND_NAME)
-      .then(Commands.argument(UUID_ARG, UuidArgument.uuid())
-        .executes(ctx -> {
-          final UUID callbackId = UuidArgument.getUuid(ctx, UUID_ARG);
-          final @Nullable CallbackRegistration reg = this.registrations.getIfPresent(callbackId);
-
-          if (reg == null) {
-            ((AdventureCommandSourceStack) ctx.getSource()).sendFailure(FAILURE_MESSAGE);
-            return 0; // unsuccessful
-          }
-
-          // check use count
-          boolean expire = false;
-          boolean allowUse = true;
-          final int allowedUses = reg.options.uses();
-          if (allowedUses != ClickCallback.UNLIMITED_USES) {
-            final int useCount = reg.useCount().incrementAndGet();
-            if (useCount >= allowedUses) {
-              expire = true;
-              allowUse = !(useCount > allowedUses);
-              // allowUse: determine
-            }
-          }
-
-          // check duration expiry
-          final Instant now = Instant.now();
-          if (now.isAfter(reg.expiryTime())) {
-            expire = true;
-            allowUse = false;
-          }
-
-          if (expire) {
-            this.registrations.invalidate(callbackId);
-          }
-          if (allowUse) {
-            reg.callback().accept((Audience) ctx.getSource()); // pass the CommandSourceStack to the callback action
-          } else {
-            ((AdventureCommandSourceStack) ctx.getSource()).sendFailure(FAILURE_MESSAGE);
-          }
-          return Command.SINGLE_SUCCESS;
-        })));
+    final CompoundTag payload = new CompoundTag();
+    payload.store(ID_KEY, UUIDUtil.CODEC, id);
+    return ClickEvent.custom(MinecraftAudiences.asAdventure(CLICK_CALLBACK_ID), BinaryTagHolder.encode(payload, ModDataComponentValue.SNBT_CODEC));
   }
 
   /**
-   * Perform a periodic cleanup of callbacks.
+   * Handle a custom click action, running the callback it refers to if there is a valid one.
+   *
+   * @param id the custom click action id
+   * @param payload the custom click action payload
+   * @param audience the audience that clicked
+   */
+  public void handleClick(final Identifier id, final Optional<Tag> payload, final Audience audience) {
+    if (!CLICK_CALLBACK_ID.equals(id)) {
+      return;
+    }
+
+    payload.flatMap(Tag::asCompound)
+      .flatMap(tag -> tag.read(ID_KEY, UUIDUtil.CODEC))
+      .map(this.callbacks::get)
+      .filter(StoredCallback::valid)
+      .ifPresent(callback -> {
+        callback.takeUse();
+        callback.callback.accept(audience);
+      });
+  }
+
+  /**
+   * Remove callbacks that have expired or have no remaining uses.
    */
   public void cleanUp() {
-    final Instant now = Instant.now();
+    this.callbacks.values().removeIf(callback -> !callback.valid());
+  }
 
-    final Set<UUID> uuidsToClean = new HashSet<>();
-    for (final var entry : this.registrations.asMap().entrySet()) {
-      final var reg = entry.getValue();
-      final int allowedUses = reg.options().uses();
-      if (allowedUses != ClickCallback.UNLIMITED_USES && reg.useCount().get() >= allowedUses) {
-        uuidsToClean.add(entry.getKey());
-      } else if (now.isAfter(reg.expiryTime())) {
-        uuidsToClean.add(entry.getKey());
+  private static final class StoredCallback {
+    private final long startedAt = System.nanoTime();
+    private final ClickCallback<Audience> callback;
+    private final long lifetime;
+    private volatile int remainingUses; // only written on the server thread, read during clean up
+
+    StoredCallback(final ClickCallback<Audience> callback, final ClickCallback.Options options) {
+      this.callback = callback;
+      this.lifetime = saturatedNanos(options.lifetime());
+      this.remainingUses = options.uses();
+    }
+
+    private static long saturatedNanos(final Duration duration) {
+      try {
+        return duration.toNanos();
+      } catch (final ArithmeticException ex) {
+        return Long.MAX_VALUE;
       }
     }
 
-    for (final UUID id : uuidsToClean) {
-      this.registrations.invalidate(id);
+    void takeUse() {
+      if (this.remainingUses != ClickCallback.UNLIMITED_USES) {
+        this.remainingUses--;
+      }
+    }
+
+    boolean hasRemainingUses() {
+      return this.remainingUses == ClickCallback.UNLIMITED_USES || this.remainingUses > 0;
+    }
+
+    boolean expired() {
+      if (this.lifetime == Long.MAX_VALUE) return false;
+      return System.nanoTime() - this.startedAt >= this.lifetime;
+    }
+
+    boolean valid() {
+      return this.hasRemainingUses() && !this.expired();
     }
   }
-
-  private record CallbackRegistration(ClickCallback.Options options, ClickCallback<Audience> callback, Instant expiryTime, AtomicInteger useCount) {}
 }

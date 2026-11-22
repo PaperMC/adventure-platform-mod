@@ -1,7 +1,7 @@
 /*
  * This file is part of adventure-platform-mod, licensed under the MIT License.
  *
- * Copyright (c) 2023-2025 KyoriPowered
+ * Copyright (c) 2023-2026 KyoriPowered
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,14 +27,18 @@ import com.mojang.authlib.GameProfile;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.platform.modcommon.impl.ClickCallbackRegistry;
 import net.kyori.adventure.platform.modcommon.impl.GameEnums;
 import net.kyori.adventure.platform.modcommon.impl.server.MinecraftServerAudiencesImpl;
 import net.kyori.adventure.platform.modcommon.impl.server.ServerCommonPacketListenerImplBridge;
 import net.kyori.adventure.resource.ResourcePackCallback;
 import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
 import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.common.ServerboundCustomClickActionPacket;
 import net.minecraft.network.protocol.common.ServerboundResourcePackPacket;
 import net.minecraft.server.network.ServerCommonPacketListenerImpl;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -85,6 +89,13 @@ public abstract class ServerCommonPacketListenerImplMixin implements ServerCommo
         state.controller().player(this.shadow$playerProfile().id())
       );
       ci.cancel();
+    }
+  }
+
+  @Inject(method = "handleCustomClickAction(Lnet/minecraft/network/protocol/common/ServerboundCustomClickActionPacket;)V", at = @At("TAIL"))
+  private void adventure$handleClickCallback(final ServerboundCustomClickActionPacket pkt, final CallbackInfo ci) {
+    if ((Object) this instanceof final ServerGamePacketListenerImpl game) {
+      ClickCallbackRegistry.INSTANCE.handleClick(pkt.id(), pkt.payload(), (Audience) game.player);
     }
   }
 }
