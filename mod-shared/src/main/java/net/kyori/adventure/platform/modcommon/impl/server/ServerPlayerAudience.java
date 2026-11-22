@@ -127,7 +127,10 @@ public class ServerPlayerAudience implements ControlledAudience {
       if (pcm.isSystem()) {
         this.player.sendChatMessage(new OutgoingChatMessage.Disguised(pcm.decoratedContent()), false, this.toMc(boundChatType));
       } else {
-        this.player.sendChatMessage(new OutgoingChatMessage.Player(pcm), false, this.toMc(boundChatType));
+        // Filter like vanilla's chat broadcast, falling back to the receiver's setting when the sender is offline
+        final @Nullable ServerPlayer sender = this.player.level().getServer().getPlayerList().getPlayer(pcm.sender());
+        final boolean filtered = sender != null ? sender.shouldFilterMessageTo(this.player) : this.player.isTextFilteringEnabled();
+        this.player.sendChatMessage(new OutgoingChatMessage.Player(pcm), filtered, this.toMc(boundChatType));
       }
     } else {
       this.sendMessage(Objects.requireNonNullElse(signedMessage.unsignedContent(), Component.text(signedMessage.message())), boundChatType);
