@@ -17,6 +17,6 @@ mixins:
   - "adventure-platform-fabric-testmod.mixins.json"
 
 depends:
-  fabricloader: ">=0.4.0"
+  fabricloader: ">=0.20.1"
   adventure-platform-fabric: "*"
   fabric-api: "*"
