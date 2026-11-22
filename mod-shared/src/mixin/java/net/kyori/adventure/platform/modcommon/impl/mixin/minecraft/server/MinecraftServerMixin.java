@@ -37,6 +37,7 @@ import net.kyori.adventure.platform.modcommon.impl.server.MinecraftServerBridge;
 import net.kyori.adventure.platform.modcommon.impl.server.PlainAudience;
 import net.kyori.adventure.platform.modcommon.impl.server.RenderableAudience;
 import net.kyori.adventure.pointer.Pointers;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.util.TriState;
 import net.minecraft.core.LayeredRegistryAccess;
 import net.minecraft.server.MinecraftServer;
@@ -86,6 +87,7 @@ public abstract class MinecraftServerMixin implements MinecraftServerBridge, Ren
         if (this.adventure$pointers == null) {
           return this.adventure$pointers = Pointers.builder()
             .withStatic(Identity.NAME, "Server")
+            .withStatic(Identity.DISPLAY_NAME, Component.text("Server"))
             .withStatic(PermissionChecker.POINTER, perm -> TriState.TRUE)
             .build();
         }

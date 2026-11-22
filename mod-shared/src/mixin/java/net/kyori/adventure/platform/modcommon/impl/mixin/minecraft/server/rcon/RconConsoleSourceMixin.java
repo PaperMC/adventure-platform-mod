@@ -36,6 +36,7 @@ import net.kyori.adventure.platform.modcommon.impl.server.MinecraftServerAudienc
 import net.kyori.adventure.platform.modcommon.impl.server.PlainAudience;
 import net.kyori.adventure.platform.modcommon.impl.server.RenderableAudience;
 import net.kyori.adventure.pointer.Pointers;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.util.TriState;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.rcon.RconConsoleSource;
@@ -70,7 +71,8 @@ public abstract class RconConsoleSourceMixin implements RenderableAudience, Forw
       synchronized (this) {
         if (this.adventure$pointers == null) {
           return this.adventure$pointers = Pointers.builder()
-            .withStatic(Identity.NAME, "Server")
+            .withStatic(Identity.NAME, "Rcon")
+            .withStatic(Identity.DISPLAY_NAME, Component.text("Rcon"))
             .withStatic(PermissionChecker.POINTER, perm -> TriState.TRUE)
             .build();
         }
