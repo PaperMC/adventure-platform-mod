@@ -48,6 +48,11 @@ public interface PlatformHooks extends SidedProxy {
   }
 
   @Override
+  default @NotNull Locale languageLocale() {
+    return this.sidedProxy().languageLocale();
+  }
+
+  @Override
   default @NotNull WrappedComponent createWrappedComponent(
     final net.kyori.adventure.text.@NotNull Component wrapped,
     final @Nullable Function<Pointered, ?> partition,

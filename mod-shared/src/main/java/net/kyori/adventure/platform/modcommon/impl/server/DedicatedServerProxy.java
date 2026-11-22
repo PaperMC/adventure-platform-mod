@@ -23,6 +23,7 @@
  */
 package net.kyori.adventure.platform.modcommon.impl.server;
 
+import java.util.Locale;
 import java.util.function.Function;
 import net.kyori.adventure.platform.modcommon.impl.NonWrappingComponentSerializer;
 import net.kyori.adventure.platform.modcommon.impl.SidedProxy;
@@ -38,6 +39,12 @@ public class DedicatedServerProxy implements SidedProxy {
   @Override
   public void contributeFlattenerElements(final ComponentFlattener.@NotNull Builder flattenerBuilder) {
     // no-op
+  }
+
+  @Override
+  public @NotNull Locale languageLocale() {
+    // Dedicated servers only ship en_us
+    return Locale.US;
   }
 
   @Override

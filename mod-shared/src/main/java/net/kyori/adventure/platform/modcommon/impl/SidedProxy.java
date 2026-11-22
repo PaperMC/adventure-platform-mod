@@ -23,6 +23,7 @@
  */
 package net.kyori.adventure.platform.modcommon.impl;
 
+import java.util.Locale;
 import java.util.function.Function;
 import net.kyori.adventure.pointer.Pointered;
 import net.kyori.adventure.text.Component;
@@ -33,6 +34,13 @@ import org.jetbrains.annotations.Nullable;
 
 public interface SidedProxy {
   void contributeFlattenerElements(final ComponentFlattener.@NotNull Builder flattenerBuilder);
+
+  /**
+   * The locale of the loaded vanilla language, used when flattening translations.
+   *
+   * @return the language's locale
+   */
+  @NotNull Locale languageLocale();
 
   @NotNull WrappedComponent createWrappedComponent(
     final @NotNull Component wrapped,

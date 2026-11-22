@@ -105,9 +105,10 @@ public final class AdventureCommon {
 
     flattenerBuilder.complexMapper(TranslatableComponent.class, (translatable, consumer) -> {
       final String key = translatable.key();
+      final Locale locale = proxy.languageLocale();
       for (final Translator registry : GlobalTranslator.translator().sources()) {
-        if (registry.canTranslate(key, Locale.getDefault())) {
-          consumer.accept(GlobalTranslator.render(translatable, Locale.getDefault()));
+        if (registry.canTranslate(key, locale)) {
+          consumer.accept(GlobalTranslator.render(translatable, locale));
           return;
         }
       }

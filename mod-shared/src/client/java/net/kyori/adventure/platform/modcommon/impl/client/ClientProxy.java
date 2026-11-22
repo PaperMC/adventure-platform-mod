@@ -23,7 +23,9 @@
  */
 package net.kyori.adventure.platform.modcommon.impl.client;
 
+import java.util.Locale;
 import java.util.function.Function;
+import net.kyori.adventure.platform.modcommon.impl.LocaleHolderBridge;
 import net.kyori.adventure.platform.modcommon.impl.NonWrappingComponentSerializer;
 import net.kyori.adventure.platform.modcommon.impl.SidedProxy;
 import net.kyori.adventure.platform.modcommon.impl.WrappedComponent;
@@ -33,6 +35,7 @@ import net.kyori.adventure.text.KeybindComponent;
 import net.kyori.adventure.text.flattener.ComponentFlattener;
 import net.kyori.adventure.text.renderer.ComponentRenderer;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,6 +45,15 @@ public class ClientProxy implements SidedProxy {
     final ComponentFlattener.@NotNull Builder flattenerBuilder
   ) {
     flattenerBuilder.mapper(KeybindComponent.class, keybind -> KeyMapping.createNameSupplier(keybind.keybind()).get().getString());
+  }
+
+  @Override
+  public @NotNull Locale languageLocale() {
+    final @Nullable Minecraft minecraft = Minecraft.getInstance();
+    if (minecraft == null || minecraft.options == null) {
+      return Locale.US;
+    }
+    return ((LocaleHolderBridge) minecraft.options).adventure$locale();
   }
 
   @Override
