@@ -61,11 +61,6 @@ public final class PlainAudience implements ControlledAudience {
   }
 
   @Override
-  public void sendActionBar(final @NotNull Component message) {
-    this.sendMessage(message);
-  }
-
-  @Override
   public @NotNull Pointers pointers() {
     return this.source.pointers();
   }
