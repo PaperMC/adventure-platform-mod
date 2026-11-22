@@ -113,10 +113,12 @@ public class ServerBossBarListener extends AbstractBossBarListener<ServerBossEve
    */
   public void unsubscribeFromAll(final ServerPlayer player) {
     for (final Iterator<Map.Entry<BossBar, ServerBossEvent>> it = this.bars.entrySet().iterator(); it.hasNext();) {
-      final ServerBossEvent bar = it.next().getValue();
+      final Map.Entry<BossBar, ServerBossEvent> entry = it.next();
+      final ServerBossEvent bar = entry.getValue();
       if (bar.getPlayers().contains(player)) {
         bar.removePlayer(player);
         if (bar.getPlayers().isEmpty()) {
+          entry.getKey().removeListener(this);
           it.remove();
         }
       }
