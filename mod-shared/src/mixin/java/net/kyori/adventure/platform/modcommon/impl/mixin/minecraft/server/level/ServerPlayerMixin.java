@@ -24,6 +24,7 @@
 package net.kyori.adventure.platform.modcommon.impl.mixin.minecraft.server.level;
 
 import com.google.common.collect.MapMaker;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import java.util.Locale;
 import java.util.Map;
 import net.kyori.adventure.audience.Audience;
@@ -34,8 +35,10 @@ import net.kyori.adventure.platform.modcommon.impl.LocaleHolderBridge;
 import net.kyori.adventure.platform.modcommon.impl.MinecraftAudiencesInternal;
 import net.kyori.adventure.platform.modcommon.impl.mixin.minecraft.world.entity.player.PlayerMixin;
 import net.kyori.adventure.platform.modcommon.impl.server.MinecraftServerAudiencesImpl;
+import net.kyori.adventure.platform.modcommon.impl.server.PlayerCommandSource;
 import net.kyori.adventure.platform.modcommon.impl.server.RenderableAudience;
 import net.kyori.adventure.platform.modcommon.impl.server.ServerPlayerAudience;
+import net.minecraft.commands.CommandSource;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
@@ -43,6 +46,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -56,10 +60,12 @@ public abstract class ServerPlayerMixin extends PlayerMixin implements Forwardin
   @Shadow @Final private MinecraftServer server;
   @Shadow public ServerGamePacketListenerImpl connection;
   @Shadow private String language;
+  @Shadow @Final private CommandSource commandSource;
   // @formatter:on
 
   private Audience adventure$backing;
   private Locale adventure$locale;
+  private @Nullable CommandSource adventure$commandSource;
   private final Map<MinecraftServerAudiencesImpl, Audience> adventure$renderers = new MapMaker().weakKeys().makeMap();
 
   protected ServerPlayerMixin(final EntityType<? extends LivingEntity> entityType, final Level level) {
@@ -79,6 +85,17 @@ public abstract class ServerPlayerMixin extends PlayerMixin implements Forwardin
     this.adventure$locale = LocaleHolderBridge.toLocale(this.language);
 
     this.adventure$backing = MinecraftServerAudiences.of(this.server).audience((ServerPlayer) (Object) this);
+  }
+
+  @Inject(method = "<init>", at = @At("TAIL"))
+  private void adventure$wrapCommandSource(final CallbackInfo ci) {
+    this.adventure$commandSource = new PlayerCommandSource((ServerPlayer) (Object) this, this.commandSource);
+  }
+
+  @ModifyReturnValue(method = "commandSource", at = @At("RETURN"))
+  private CommandSource adventure$wrappedCommandSource(final CommandSource original) {
+    // Only null while the constructor is still running
+    return this.adventure$commandSource != null ? this.adventure$commandSource : original;
   }
 
   @Override

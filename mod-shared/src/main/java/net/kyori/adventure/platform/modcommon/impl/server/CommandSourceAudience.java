@@ -66,9 +66,4 @@ public final class CommandSourceAudience implements ControlledAudience {
     this.output.sendSystemMessage(AdventureCommon.chatTypeToNative(boundChatType, this.serializer)
       .decorate(this.serializer.asNative(message)));
   }
-
-  @Override
-  public void sendActionBar(final @NotNull Component message) {
-    this.sendMessage(message);
-  }
 }
