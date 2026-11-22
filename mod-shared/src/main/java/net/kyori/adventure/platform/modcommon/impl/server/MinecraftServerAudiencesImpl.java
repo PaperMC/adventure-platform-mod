@@ -25,6 +25,7 @@ package net.kyori.adventure.platform.modcommon.impl.server;
 
 import com.google.common.collect.Iterables;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -112,7 +113,7 @@ public final class MinecraftServerAudiencesImpl implements MinecraftServerAudien
 
   @Override
   public @NotNull Audience players() {
-    return Audience.audience(this.audiences(this.server.getPlayerList().getPlayers()));
+    return new BroadcastAudience(this, this.server.getPlayerList()::getPlayers, this.server::getAllLevels, this.server.overworld());
   }
 
   @Override
@@ -182,7 +183,7 @@ public final class MinecraftServerAudiencesImpl implements MinecraftServerAudien
     final @Nullable ServerLevel level = this.server.getLevel(ResourceKey.create(Registries.DIMENSION,
       MinecraftAudiences.asNative(requireNonNull(worldId, "worldId"))));
     if (level != null) {
-      return this.audience(level.players());
+      return new BroadcastAudience(this, level::players, () -> List.of(level), level);
     }
     return Audience.empty();
   }

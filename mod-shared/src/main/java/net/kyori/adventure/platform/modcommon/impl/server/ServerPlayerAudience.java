@@ -40,7 +40,6 @@ import net.kyori.adventure.platform.modcommon.impl.GameEnums;
 import net.kyori.adventure.platform.modcommon.impl.MinecraftAudiencesInternal;
 import net.kyori.adventure.platform.modcommon.impl.VanillaDialog;
 import net.kyori.adventure.platform.modcommon.impl.accessor.minecraft.network.ServerGamePacketListenerImplAccess;
-import net.kyori.adventure.platform.modcommon.impl.accessor.minecraft.world.level.LevelAccess;
 import net.kyori.adventure.pointer.Pointers;
 import net.kyori.adventure.resource.ResourcePackRequest;
 import net.kyori.adventure.sound.Sound;
@@ -49,10 +48,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
 import net.kyori.adventure.title.TitlePart;
-import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.OutgoingChatMessage;
 import net.minecraft.network.chat.PlayerChatMessage;
 import net.minecraft.network.protocol.Packet;
@@ -67,13 +64,9 @@ import net.minecraft.network.protocol.game.ClientboundSetPlayerInventoryPacket;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
-import net.minecraft.network.protocol.game.ClientboundSoundEntityPacket;
-import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.network.protocol.game.ClientboundStopSoundPacket;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.Filterable;
-import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
@@ -163,23 +156,6 @@ public class ServerPlayerAudience implements ControlledAudience {
     MinecraftServerAudiencesImpl.forEachInstance(controller -> controller.bossBars().unsubscribe(this.player, bar));
   }
 
-  private long seed(final @NotNull Sound sound) {
-    if (sound.seed().isPresent()) {
-      return sound.seed().getAsLong();
-    } else {
-      return ((LevelAccess) this.player.level()).accessor$soundSeedGenerator().nextLong();
-    }
-  }
-
-  private Holder<SoundEvent> eventHolder(final @NotNull Sound sound) {
-    final var soundEventRegistry = this.controller.registryAccess()
-      .lookupOrThrow(Registries.SOUND_EVENT);
-    final var soundKey = MinecraftAudiences.asNative(sound.name());
-
-    final var eventOptional = soundEventRegistry.get(ResourceKey.create(Registries.SOUND_EVENT, soundKey));
-    return eventOptional.isPresent() ? eventOptional.get() : Holder.direct(SoundEvent.createVariableRangeEvent(soundKey));
-  }
-
   @Override
   public void playSound(final @NotNull Sound sound) {
     this.playSound(sound, this.player.getX(), this.player.getY(), this.player.getZ());
@@ -187,16 +163,7 @@ public class ServerPlayerAudience implements ControlledAudience {
 
   @Override
   public void playSound(final @NotNull Sound sound, final double x, final double y, final double z) {
-    this.sendPacket(new ClientboundSoundPacket(
-      this.eventHolder(sound),
-      GameEnums.SOUND_SOURCE.toMinecraft(sound.source()),
-      x,
-      y,
-      z,
-      sound.volume(),
-      sound.pitch(),
-      this.seed(sound)
-    ));
+    this.sendPacket(ServerSounds.at(ServerSounds.event(this.controller, sound), sound, x, y, z, ServerSounds.seed(this.player.level(), sound)));
   }
 
   @Override
@@ -215,14 +182,7 @@ public class ServerPlayerAudience implements ControlledAudience {
       return;
     }
 
-    this.sendPacket(new ClientboundSoundEntityPacket(
-      this.eventHolder(sound),
-      GameEnums.SOUND_SOURCE.toMinecraft(sound.source()),
-      targetEntity,
-      sound.volume(),
-      sound.pitch(),
-      this.seed(sound)
-    ));
+    this.sendPacket(ServerSounds.from(ServerSounds.event(this.controller, sound), sound, targetEntity, ServerSounds.seed(this.player.level(), sound)));
   }
 
   @Override
