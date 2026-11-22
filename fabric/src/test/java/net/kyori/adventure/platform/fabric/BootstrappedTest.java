@@ -27,6 +27,8 @@ import com.google.gson.JsonElement;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponentInitializers;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.registries.VanillaRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
@@ -44,6 +46,7 @@ abstract class BootstrappedTest {
     Bootstrap.bootStrap();
     Bootstrap.validate();
     registries = VanillaRegistries.createWorldLookup();
+    BuiltInRegistries.DATA_COMPONENT_INITIALIZERS.build(registries).forEach(DataComponentInitializers.PendingComponents::apply);
   }
 
   protected static HolderLookup.Provider lookup() {

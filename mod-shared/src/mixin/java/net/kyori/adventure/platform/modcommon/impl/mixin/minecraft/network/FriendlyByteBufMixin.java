@@ -23,6 +23,7 @@
  */
 package net.kyori.adventure.platform.modcommon.impl.mixin.minecraft.network;
 
+import net.kyori.adventure.platform.modcommon.impl.PacketRecipient;
 import net.kyori.adventure.platform.modcommon.impl.server.FriendlyByteBufBridge;
 import net.kyori.adventure.pointer.Pointered;
 import net.minecraft.network.FriendlyByteBuf;
@@ -31,15 +32,11 @@ import org.spongepowered.asm.mixin.Mixin;
 
 @Mixin(FriendlyByteBuf.class)
 public abstract class FriendlyByteBufMixin implements FriendlyByteBufBridge {
-  private @Nullable Pointered adventure$data;
+  // Captured on creation, since protocol codecs create their own buffers while encoding
+  private final @Nullable Pointered adventure$recipient = PacketRecipient.current();
 
   @Override
-  public void adventure$data(final @Nullable Pointered data) {
-    this.adventure$data = data;
-  }
-
-  @Override
-  public Pointered adventure$data() {
-    return this.adventure$data;
+  public @Nullable Pointered adventure$recipient() {
+    return this.adventure$recipient;
   }
 }

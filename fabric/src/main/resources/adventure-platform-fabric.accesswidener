@@ -3,3 +3,5 @@ accessible field net/minecraft/network/chat/contents/TranslatableContents PRIMIT
 accessible class net/minecraft/world/item/component/ResolvableProfile$Partial
 accessible method net/minecraft/world/item/component/ResolvableProfile$Partial <init> (Ljava/util/Optional;Ljava/util/Optional;Lcom/mojang/authlib/properties/PropertyMap;)V
 accessible field net/minecraft/world/item/component/ResolvableProfile$Partial MAP_CODEC Lcom/mojang/serialization/MapCodec;
+accessible method net/minecraft/resources/RegistryOps <init> (Lcom/mojang/serialization/DynamicOps;Lnet/minecraft/core/HolderGetter$Provider;)V
+accessible field net/minecraft/resources/RegistryOps getterProvider Lnet/minecraft/core/HolderGetter$Provider;

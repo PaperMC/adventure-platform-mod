@@ -156,6 +156,15 @@ public final class AdventureCommon {
     return flattenerBuilder.build();
   }
 
+  public static boolean hasAnyTranslations() {
+    for (final Translator source : GlobalTranslator.translator().sources()) {
+      if (source.hasAnyTranslations().toBooleanOrElse(true)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public static Function<Pointered, Locale> localePartition() {
     return ptr -> ptr.getOrDefault(Identity.LOCALE, Locale.US);
   }

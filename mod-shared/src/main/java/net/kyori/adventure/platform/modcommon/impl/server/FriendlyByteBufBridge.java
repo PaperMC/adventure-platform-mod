@@ -27,7 +27,10 @@ import net.kyori.adventure.pointer.Pointered;
 import org.jetbrains.annotations.Nullable;
 
 public interface FriendlyByteBufBridge {
-  void adventure$data(final @Nullable Pointered data);
-
-  Pointered adventure$data();
+  /**
+   * Get the receiver of the packet this buffer was created to encode.
+   *
+   * @return the receiver, or {@code null} if unknown
+   */
+  @Nullable Pointered adventure$recipient();
 }

@@ -25,22 +25,17 @@ package net.kyori.adventure.platform.modcommon.impl.mixin.minecraft.server.netwo
 
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.sugar.Local;
-import io.netty.buffer.ByteBuf;
 import java.util.UUID;
-import java.util.function.Function;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.dialog.DialogLike;
 import net.kyori.adventure.identity.Identity;
 import net.kyori.adventure.platform.modcommon.MinecraftServerAudiences;
-import net.kyori.adventure.platform.modcommon.impl.AdventureCommon;
 import net.kyori.adventure.platform.modcommon.impl.LocaleHolderBridge;
 import net.kyori.adventure.platform.modcommon.impl.VanillaDialog;
-import net.kyori.adventure.platform.modcommon.impl.server.FriendlyByteBufBridge;
 import net.kyori.adventure.platform.modcommon.impl.server.MinecraftServerAudiencesImpl;
 import net.kyori.adventure.platform.modcommon.impl.server.ServerResourcePacks;
 import net.kyori.adventure.pointer.Pointers;
 import net.kyori.adventure.resource.ResourcePackRequest;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.protocol.common.ClientboundClearDialogPacket;
 import net.minecraft.network.protocol.common.ClientboundShowDialogPacket;
 import net.minecraft.network.protocol.common.ServerboundResourcePackPacket;
@@ -48,12 +43,10 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ClientInformation;
 import net.minecraft.server.network.ConfigurationTask;
 import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
-import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 @Mixin(ServerConfigurationPacketListenerImpl.class)
 public abstract class ServerConfigurationPacketListenerImplMixin extends ServerCommonPacketListenerImplMixin implements Audience {
@@ -99,16 +92,6 @@ public abstract class ServerConfigurationPacketListenerImplMixin extends ServerC
     this.shadow$send(ClientboundClearDialogPacket.INSTANCE);
   }
 
-  @ModifyArg(method = "handleConfigurationFinished", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/SimpleUnboundProtocol;bind(Ljava/util/function/Function;)Lnet/minecraft/network/ProtocolInfo;"))
-  private Function<ByteBuf, RegistryFriendlyByteBuf> adventure$injectPointers(final Function<ByteBuf, RegistryFriendlyByteBuf> original) {
-    return buf -> {
-      final RegistryFriendlyByteBuf wrapped = original.apply(buf);
-      if (this.adventure$connection().getPacketListener() instanceof ServerGamePacketListenerImpl game) {
-        ((FriendlyByteBufBridge) wrapped).adventure$data(AdventureCommon.pointered(game.player));
-      }
-      return wrapped;
-    };
-  }
 
   // Only the server's own pack belongs to the vanilla pack task, responses to packs sent through this audience must not finish it
   @WrapWithCondition(

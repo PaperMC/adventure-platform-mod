@@ -23,14 +23,10 @@
  */
 package net.kyori.adventure.platform.modcommon.impl.mixin.minecraft.network.chat;
 
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.serialization.Codec;
-import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.platform.modcommon.impl.ComponentCodecs;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
-import net.minecraft.network.codec.StreamCodec;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -45,13 +41,4 @@ public abstract class ComponentSerializationMixin {
     cir.setReturnValue(ComponentCodecs.unwrappingToNative(original));
   }
 
-  // inject stream codecs for translation
-  @WrapOperation(method = "<clinit>()V", at = {
-    @At(value = "INVOKE", target = "Lnet/minecraft/network/codec/ByteBufCodecs;fromCodecWithRegistries(Lcom/mojang/serialization/Codec;)Lnet/minecraft/network/codec/StreamCodec;"),
-    @At(value = "INVOKE", target = "Lnet/minecraft/network/codec/ByteBufCodecs;fromCodecWithRegistriesTrusted(Lcom/mojang/serialization/Codec;)Lnet/minecraft/network/codec/StreamCodec;"),
-    @At(value = "INVOKE", target = "Lnet/minecraft/network/codec/ByteBufCodecs;fromCodecTrusted(Lcom/mojang/serialization/Codec;)Lnet/minecraft/network/codec/StreamCodec;")
-  })
-  private static <T extends ByteBuf> StreamCodec<T, Component> adventure$wrapStreamCodec(final Codec<Component> codec, final Operation<StreamCodec<T, Component>> op) {
-    return ComponentCodecs.translatingStreamCodec(op.call(codec));
-  }
 }

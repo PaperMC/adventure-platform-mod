@@ -1,7 +1,7 @@
 /*
  * This file is part of adventure-platform-mod, licensed under the MIT License.
  *
- * Copyright (c) 2024 KyoriPowered
+ * Copyright (c) 2024-2026 KyoriPowered
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,11 +28,11 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.Lifecycle;
-import io.netty.buffer.ByteBuf;
-import net.kyori.adventure.platform.modcommon.impl.server.FriendlyByteBufBridge;
+import java.util.Locale;
 import net.kyori.adventure.pointer.Pointered;
+import net.kyori.adventure.translation.GlobalTranslator;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -49,12 +49,21 @@ public final class ComponentCodecs {
     return new Codec<Component>() {
       @Override
       public <T> DataResult<T> encode(final Component input, final DynamicOps<T> ops, final T prefix) {
-        if (input instanceof WrappedComponent w) {
-          if (w.deepConvertedIfPresent() != null) { // already converted
-            return original.encode(w.deepConvertedIfPresent(), ops, prefix);
+        final @Nullable Pointered recipient = PacketRecipient.renderingDisabled() ? null : PointeredOps.pointered(ops);
+        if (input instanceof WrappedComponent wrapped) {
+          final WrappedComponent rendered = recipient == null ? wrapped : wrapped.rendered(recipient);
+          if (rendered.deepConvertedIfPresent() != null) { // already converted
+            return original.encode(rendered.deepConvertedIfPresent(), ops, prefix);
           }
 
-          return AdventureCodecs.COMPONENT_CODEC.encode(w.wrapped(), ops, prefix);
+          return AdventureCodecs.COMPONENT_CODEC.encode(rendered.wrapped(), ops, prefix);
+        }
+
+        if (recipient != null && input.getContents() instanceof TranslatableContents && AdventureCommon.hasAnyTranslations()) {
+          final Locale locale = AdventureCommon.localePartition().apply(recipient);
+          return original.encodeStart(ops, input)
+            .flatMap(encoded -> AdventureCodecs.COMPONENT_CODEC.parse(ops, encoded))
+            .flatMap(component -> AdventureCodecs.COMPONENT_CODEC.encode(GlobalTranslator.render(component, locale), ops, prefix));
         }
 
         return original.encode(input, ops, prefix);
@@ -65,27 +74,5 @@ public final class ComponentCodecs {
         return original.decode(ops, input);
       }
     }.withLifecycle(Lifecycle.stable());
-  }
-
-  public static <T extends ByteBuf> StreamCodec<T, Component> translatingStreamCodec(final StreamCodec<T, Component> original) {
-    return new StreamCodec<>() {
-      @Override
-      public Component decode(final T buf) {
-        return original.decode(buf);
-      }
-
-      @Override
-      public void encode(final T buf, final Component component) {
-        if (buf instanceof FriendlyByteBufBridge) {
-          final @Nullable Pointered adventure$data = ((FriendlyByteBufBridge) buf).adventure$data();
-          if (adventure$data != null && component instanceof WrappedComponent input) {
-            original.encode(buf, input.rendered(adventure$data));
-            return;
-          }
-        }
-
-        original.encode(buf, component);
-      }
-    };
   }
 }
