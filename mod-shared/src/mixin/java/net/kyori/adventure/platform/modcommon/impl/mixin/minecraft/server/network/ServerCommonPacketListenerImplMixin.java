@@ -79,11 +79,8 @@ public abstract class ServerCommonPacketListenerImplMixin implements ServerCommo
     }
   }
 
-  @Inject(
-    method = "handleResourcePackResponse(Lnet/minecraft/network/protocol/common/ServerboundResourcePackPacket;)V",
-    at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/common/ServerboundResourcePackPacket;action()Lnet/minecraft/network/protocol/common/ServerboundResourcePackPacket$Action;"),
-    cancellable = true
-  )
+  // After vanilla's handling, so a declined pack still kicks when the server requires resource packs
+  @Inject(method = "handleResourcePackResponse(Lnet/minecraft/network/protocol/common/ServerboundResourcePackPacket;)V", at = @At("TAIL"))
   private void adventure$handleResourcePackCallback(final ServerboundResourcePackPacket pkt, final CallbackInfo ci) {
     final PackCallbackState state;
     if (pkt.action().isTerminal()) {
@@ -98,7 +95,6 @@ public abstract class ServerCommonPacketListenerImplMixin implements ServerCommo
         GameEnums.RESOURCE_PACK_STATUS.asAdventure(pkt.action()),
         (Object) this instanceof final ServerConfigurationPacketListenerImpl configuration ? (Audience) configuration : state.controller().player(this.shadow$playerProfile().id())
       );
-      ci.cancel();
     }
   }
 
