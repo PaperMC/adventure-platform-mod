@@ -282,23 +282,12 @@ public class ServerPlayerAudience implements ControlledAudience {
 
   @Override
   public void showTitle(final @NotNull Title title) {
-    if (title.subtitle() != Component.empty()) {
-      this.sendPacket(new ClientboundSetSubtitleTextPacket(this.controller.asNative(title.subtitle())));
-    }
-
     final Title.@Nullable Times times = title.times();
     if (times != null) {
-      final int fadeIn = ticks(times.fadeIn());
-      final int fadeOut = ticks(times.fadeOut());
-      final int dwell = ticks(times.stay());
-      if (fadeIn != -1 || fadeOut != -1 || dwell != -1) {
-        this.sendPacket(new ClientboundSetTitlesAnimationPacket(fadeIn, dwell, fadeOut));
-      }
+      this.sendPacket(new ClientboundSetTitlesAnimationPacket(ticks(times.fadeIn()), ticks(times.stay()), ticks(times.fadeOut())));
     }
-
-    if (title.title() != Component.empty()) {
-      this.sendPacket(new ClientboundSetTitleTextPacket(this.controller.asNative(title.title())));
-    }
+    this.sendPacket(new ClientboundSetSubtitleTextPacket(this.controller.asNative(title.subtitle())));
+    this.sendPacket(new ClientboundSetTitleTextPacket(this.controller.asNative(title.title())));
   }
 
   @Override
@@ -310,12 +299,7 @@ public class ServerPlayerAudience implements ControlledAudience {
       this.sendPacket(new ClientboundSetSubtitleTextPacket(this.controller.asNative((Component) value)));
     } else if (part == TitlePart.TIMES) {
       final Title.Times times = (Title.Times) value;
-      final int fadeIn = ticks(times.fadeIn());
-      final int fadeOut = ticks(times.fadeOut());
-      final int dwell = ticks(times.stay());
-      if (fadeIn != -1 || fadeOut != -1 || dwell != -1) {
-        this.sendPacket(new ClientboundSetTitlesAnimationPacket(fadeIn, dwell, fadeOut));
-      }
+      this.sendPacket(new ClientboundSetTitlesAnimationPacket(ticks(times.fadeIn()), ticks(times.stay()), ticks(times.fadeOut())));
     } else {
       throw new IllegalArgumentException("Unknown TitlePart '" + part + "'");
     }
