@@ -32,18 +32,20 @@ public interface LocaleHolderBridge {
    * Take a locale string provided from a minecraft client and attempt to parse it as a locale.
    * These are not strictly compliant with the iso standard, so we try to make things a bit more normalized.
    *
+   * <p>Falls back to {@link Locale#US} when the string is missing or can't be parsed.</p>
+   *
    * @param mcLocale The locale string, in the format provided by the Minecraft client
    * @return A Locale object matching the provided locale string
    */
-  static @Nullable Locale toLocale(final @Nullable String mcLocale) {
-    if (mcLocale == null) return null;
+  static @NotNull Locale toLocale(final @Nullable String mcLocale) {
+    if (mcLocale == null) return Locale.US;
 
     final String[] parts = mcLocale.split("_", 3);
     return switch (parts.length) {
-      case 1 -> parts[0].isEmpty() ? null : Locale.of(parts[0]);
+      case 1 -> parts[0].isEmpty() ? Locale.US : Locale.of(parts[0]);
       case 2 -> Locale.of(parts[0], parts[1]);
       case 3 -> Locale.of(parts[0], parts[1], parts[2]);
-      default -> null;
+      default -> Locale.US;
     };
   }
 
