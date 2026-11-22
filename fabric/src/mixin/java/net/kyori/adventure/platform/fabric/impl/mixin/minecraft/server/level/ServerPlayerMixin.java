@@ -78,6 +78,16 @@ public abstract class ServerPlayerMixin implements ServerPlayerBridge {
     this.connection.send(packet);
   }
 
+  @Override
+  public Component bridge$tabListHeader() {
+    return this.adventure$tabListHeader;
+  }
+
+  @Override
+  public Component bridge$tabListFooter() {
+    return this.adventure$tabListFooter;
+  }
+
   // Known argument type tracking
 
   @Override
@@ -92,6 +102,9 @@ public abstract class ServerPlayerMixin implements ServerPlayerBridge {
 
   @Inject(method = "restoreFrom", at = @At("RETURN"))
   public void adventure$copyData(final ServerPlayer from, final boolean keepEverything, final CallbackInfo ci) {
-    this.bridge$knownArguments(((ServerPlayerBridge) from).bridge$knownArguments());
+    final ServerPlayerBridge old = (ServerPlayerBridge) from;
+    this.bridge$knownArguments(old.bridge$knownArguments());
+    this.adventure$tabListHeader = old.bridge$tabListHeader();
+    this.adventure$tabListFooter = old.bridge$tabListFooter();
   }
 }

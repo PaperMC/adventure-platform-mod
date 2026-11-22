@@ -39,6 +39,20 @@ public interface ServerPlayerBridge {
   void bridge$updateTabList(final @Nullable Component header, final @Nullable Component footer);
 
   /**
+   * The last tab list header sent to the player.
+   *
+   * @return the header
+   */
+  Component bridge$tabListHeader();
+
+  /**
+   * The last tab list footer sent to the player.
+   *
+   * @return the footer
+   */
+  Component bridge$tabListFooter();
+
+  /**
    * Set of registered optional argument types.
    *
    * @return immutable set of type identifiers
