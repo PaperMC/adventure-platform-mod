@@ -1,6 +1,5 @@
 plugins {
-  id("net.kyori.indra")
-  id("net.kyori.indra.checkstyle")
+  id("base-conventions")
 }
 
 val jarInJar = configurations.create("jarInJar")

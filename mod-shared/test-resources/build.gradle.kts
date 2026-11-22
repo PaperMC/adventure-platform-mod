@@ -1,4 +1,5 @@
 plugins {
+  id("base-conventions")
   alias(libs.plugins.configurateTransformations)
   id("net.fabricmc.fabric-loom-companion")
 }

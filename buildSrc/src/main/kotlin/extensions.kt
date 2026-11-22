@@ -8,7 +8,6 @@ import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.expand
 import org.gradle.kotlin.dsl.getByType
-import org.gradle.plugins.ide.eclipse.model.EclipseModel
 import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.jetbrains.gradle.ext.settings
 import org.jetbrains.gradle.ext.taskTriggers
@@ -55,7 +54,6 @@ fun Project.createProcessResourceTemplates(name: String, set: SourceSet): TaskPr
   set.resources.srcDir(task.map { it.outputs })
 
   // Have templates ready for IDEs
-  extensions.getByType(EclipseModel::class).synchronizationTasks(task)
   rootProject.extensions.getByType(IdeaModel::class).project.settings.taskTriggers {
     afterSync(task)
   }

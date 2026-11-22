@@ -1,6 +1,6 @@
 plugins {
   id("net.neoforged.moddev")
-  alias(libs.plugins.indra.checkstyle)
+  id("base-conventions")
 }
 
 neoForge {

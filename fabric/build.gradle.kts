@@ -149,9 +149,21 @@ tasks.withType(RunGameTask::class).configureEach {
   javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(indra.javaVersions().target().map { v -> JavaLanguageVersion.of(v) })})
 }
 
+// Resources shared with the NeoForge testmod, consumed as a regular project dependency
+val testResources = configurations.dependencyScope("testResources")
+val testResourcesDirs = configurations.resolvable("testResourcesDirs") {
+  extendsFrom(testResources.get())
+  attributes {
+    attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+    attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+    attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.RESOURCES))
+  }
+}
+
 dependencies {
   if (enablePermissionsApiCompat) "testmodRuntimeOnly"(permissionsApiCompat.output)
-  "testmodRuntimeOnly"(project.project(":test-resources").sourceSets.main.get().output)
+  testResources(project(":test-resources"))
+  "testmodRuntimeOnly"(files(testResourcesDirs))
   if (enablePermissionsApiCompat) "permissionsApiCompat"(libs.fabric.permissionsApi) {
     isTransitive = false
   }
@@ -163,7 +175,7 @@ dependencies {
 // Create a testmod jar
 val testmodJar = tasks.register("testmodJar", Jar::class) {
   from(testmod.output)
-  from(project(":test-resources").sourceSets.main.get().output)
+  from(testResourcesDirs)
   archiveClassifier = "testmod"
 }
 
