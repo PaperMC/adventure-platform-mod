@@ -1,7 +1,7 @@
 /*
  * This file is part of adventure-platform-mod, licensed under the MIT License.
  *
- * Copyright (c) 2020-2025 KyoriPowered
+ * Copyright (c) 2020-2026 KyoriPowered
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@ import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.kyori.adventure.key.Key;
+import net.minecraft.commands.arguments.SerializableArgument;
 import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.NotNull;
 
@@ -40,8 +41,15 @@ import org.jetbrains.annotations.NotNull;
  *
  * @since 6.0.0
  */
-public final class KeyArgumentType implements ArgumentType<Key> {
+public final class KeyArgumentType implements SerializableArgument.ContextFree<Key> {
   private static final KeyArgumentType INSTANCE = new KeyArgumentType();
+
+  /**
+   * The serializable argument type for key arguments.
+   *
+   * @since 7.3.0
+   */
+  public static final SerializableArgument.Type<KeyArgumentType> TYPE = SerializableArgument.singletonType(INSTANCE);
 
   /**
    * Get an argument type instance for {@link Key}s.
@@ -49,8 +57,8 @@ public final class KeyArgumentType implements ArgumentType<Key> {
    * @return key argument type
    * @since 6.0.0
    */
-  public static @NotNull KeyArgumentType key() {
-    return INSTANCE;
+  public static @NotNull ArgumentType<Key> key() {
+    return INSTANCE.toBrigadier();
   }
 
   /**
@@ -66,6 +74,11 @@ public final class KeyArgumentType implements ArgumentType<Key> {
   }
 
   private KeyArgumentType() {
+  }
+
+  @Override
+  public SerializableArgument.@NotNull Type<KeyArgumentType> type() {
+    return TYPE;
   }
 
   @Override

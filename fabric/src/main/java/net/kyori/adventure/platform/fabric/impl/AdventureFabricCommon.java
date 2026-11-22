@@ -1,7 +1,7 @@
 /*
  * This file is part of adventure-platform-mod, licensed under the MIT License.
  *
- * Copyright (c) 2020-2025 KyoriPowered
+ * Copyright (c) 2020-2026 KyoriPowered
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,6 @@
 package net.kyori.adventure.platform.fabric.impl;
 
 import com.google.auto.service.AutoService;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.logging.LogUtils;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -42,14 +41,13 @@ import net.kyori.adventure.platform.modcommon.ComponentArgumentType;
 import net.kyori.adventure.platform.modcommon.KeyArgumentType;
 import net.kyori.adventure.platform.modcommon.impl.AdventureCommon;
 import net.kyori.adventure.platform.modcommon.impl.ClickCallbackRegistry;
-import net.kyori.adventure.platform.modcommon.impl.ComponentArgumentTypeSerializer;
 import net.kyori.adventure.platform.modcommon.impl.PlatformHooks;
 import net.kyori.adventure.platform.modcommon.impl.SidedProxy;
 import net.kyori.adventure.pointer.Pointered;
 import net.kyori.adventure.pointer.Pointers;
 import net.minecraft.commands.arguments.ComponentArgument;
 import net.minecraft.commands.arguments.IdentifierArgument;
-import net.minecraft.commands.synchronization.SingletonArgumentInfo;
+import net.minecraft.commands.arguments.StringArgument;
 import net.minecraft.server.level.ServerPlayer;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -128,11 +126,10 @@ public class AdventureFabricCommon implements ModInitializer {
     ServerArgumentTypes.register(
       new ServerArgumentType<>(
         AdventureCommon.res("component"),
-        ComponentArgumentType.class,
-        ComponentArgumentTypeSerializer.INSTANCE,
-        (arg, ctx) -> switch (arg.format()) {
-          case JSON -> ComponentArgument.textComponent(ctx);
-          case MINIMESSAGE -> StringArgumentType.greedyString();
+        ComponentArgumentType.TYPE,
+        arg -> switch (arg.format()) {
+          case JSON -> ComponentArgument.textComponent();
+          case MINIMESSAGE -> StringArgument.greedyString();
         },
         null
       )
@@ -140,9 +137,8 @@ public class AdventureFabricCommon implements ModInitializer {
     ServerArgumentTypes.register(
       new ServerArgumentType<>(
         AdventureCommon.res("key"),
-        KeyArgumentType.class,
-        SingletonArgumentInfo.contextFree(KeyArgumentType::key),
-        (arg, ctx) -> IdentifierArgument.id(),
+        KeyArgumentType.TYPE,
+        arg -> IdentifierArgument.id(),
         null
       )
     );

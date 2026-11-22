@@ -1,7 +1,7 @@
 /*
  * This file is part of adventure-platform-mod, licensed under the MIT License.
  *
- * Copyright (c) 2022-2025 KyoriPowered
+ * Copyright (c) 2023-2026 KyoriPowered
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,6 @@
  */
 package net.kyori.adventure.platform.fabric.impl.mixin.minecraft.commands;
 
-import com.google.common.collect.Iterators;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -31,24 +30,20 @@ import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.tree.CommandNode;
-import java.util.Iterator;
 import java.util.Set;
 import net.kyori.adventure.platform.fabric.impl.ServerArgumentType;
 import net.kyori.adventure.platform.fabric.impl.ServerArgumentTypes;
 import net.kyori.adventure.platform.fabric.impl.accessor.brigadier.builder.RequiredArgumentBuilderAccess;
-import net.kyori.adventure.platform.modcommon.impl.HiddenRequirement;
-import net.minecraft.commands.CommandBuildContext;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
+import net.minecraft.commands.ServerPlayerSuggestionContext;
+import net.minecraft.commands.SuggestionBox;
+import net.minecraft.commands.arguments.SerializableArgument;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-@Mixin(Commands.class)
-public abstract class CommandsMixin {
-
-  @SuppressWarnings({"rawtypes", "unchecked"}) // argument type generics
+@Mixin(SuggestionBox.class)
+public abstract class SuggestionBoxMixin {
   @WrapOperation(
     method = "fillUsableCommands",
     at = @At(
@@ -57,41 +52,34 @@ public abstract class CommandsMixin {
       remap = false
     )
   )
-  private static <T> CommandNode<T> adventure$replaceArgumentType(
-    final ArgumentBuilder<T, ?> instance,
-    final Operation<CommandNode<T>> original,
-    final @Local(argsOnly = true) T sourceRaw
+  private static <S> CommandNode<S> adventure$replaceArgumentType(
+    final ArgumentBuilder<S, ?> instance,
+    final Operation<CommandNode<S>> original,
+    final @Local(argsOnly = true) Object commandFilter
   ) {
-    if (!(instance instanceof RequiredArgumentBuilder builder)) {
-      return original.call(instance); // only replace argument types for required arguments
+    if (!(instance instanceof RequiredArgumentBuilder<?, ?> builder)
+      || !(commandFilter instanceof ServerPlayerSuggestionContext context)
+      || !(context.entity() instanceof ServerPlayer player)) {
+      return original.call(instance); // only replace argument types for required arguments being sent to players
     }
-    final CommandSourceStack source = (CommandSourceStack) sourceRaw;
-    ServerArgumentType<ArgumentType<T>> type = ServerArgumentTypes.byClass((Class) builder.getType().getClass());
-    final Set<Identifier> knownExtraCommands = ServerArgumentTypes.knownArgumentTypes(source.getPlayer()); // throws an exception, we can ignore bc this is always a player
+
+    final Set<Identifier> knownTypes = ServerArgumentTypes.knownArgumentTypes(player);
     // If we have a replacement and the arg type isn't known to the client, change the argument type
     // This is super un-typesafe, but as long as the returned CommandNode is only used for serialization we are fine.
     // Repeat as long as a type is replaceable -- that way you can have a hierarchy of argument types.
-    while (type != null && !knownExtraCommands.contains(type.id())) {
-      final CommandBuildContext ctx = CommandBuildContext.simple(source.registryAccess(), source.enabledFeatures());
-      ((RequiredArgumentBuilderAccess) builder).accessor$type(type.fallbackProvider().apply(builder.getType(), ctx));
+    ServerArgumentType<SerializableArgument<?>> type = adventure$serverType(builder.getType());
+    while (type != null && !knownTypes.contains(type.id())) {
+      final ArgumentType<?> fallback = type.fallbackProvider().apply(SerializableArgument.unwrapOrThrow(builder.getType()));
+      ((RequiredArgumentBuilderAccess) builder).accessor$type(fallback);
       if (type.fallbackSuggestions() != null) {
-        builder.suggests(type.fallbackSuggestions());
+        builder.suggests(type.fallbackSuggestions().toBrigadier());
       }
-      type = ServerArgumentTypes.byClass((Class) builder.getType().getClass());
+      type = adventure$serverType(fallback);
     }
     return original.call(instance);
   }
 
-  /**
-   * Hide hidden commands from the client upon sync.
-   *
-   * <p>This injection is optional because its failure won't break any essential behavior.</p>
-   *
-   * @param itr original rootCommandSource.getChildren() iterator
-   * @return the filtered iterator
-   */
-  @ModifyVariable(method = "fillUsableCommands", at = @At("STORE"), ordinal = 0, require = 0)
-  private static Iterator<CommandNode<CommandSourceStack>> adventure$filterHiddenCommands(final Iterator<CommandNode<CommandSourceStack>> itr) {
-    return Iterators.filter(itr, node -> !(node.getRequirement() instanceof HiddenRequirement<CommandSourceStack>));
+  private static ServerArgumentType<SerializableArgument<?>> adventure$serverType(final ArgumentType<?> type) {
+    return type instanceof SerializableArgument.BrigadierWrapper<?> wrapper ? ServerArgumentTypes.serverType(wrapper.argument()) : null;
   }
 }

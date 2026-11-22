@@ -78,7 +78,7 @@ import net.kyori.adventure.translation.TranslationStore;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.chat.GuiMessageTag;
 import net.minecraft.commands.arguments.EntityArgument;
-import net.minecraft.commands.synchronization.SuggestionProviders;
+import net.minecraft.commands.suggestions.SuggestAvailableSounds;
 import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.network.chat.ResolutionContext;
 import net.minecraft.resources.Identifier;
@@ -88,8 +88,6 @@ import net.minecraft.world.entity.Entity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
-import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
 import static java.util.Objects.requireNonNull;
 import static net.kyori.adventure.platform.modcommon.ComponentArgumentType.component;
 import static net.kyori.adventure.platform.modcommon.ComponentArgumentType.miniMessage;
@@ -104,6 +102,8 @@ import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 import static net.minecraft.commands.arguments.EntityArgument.getPlayers;
 import static net.minecraft.commands.arguments.EntityArgument.players;
+import static net.minecraft.commands.arguments.IntegerArgument.getInteger;
+import static net.minecraft.commands.arguments.IntegerArgument.integer;
 
 public class AdventureFabricTester implements ModInitializer {
   public static final ComponentLogger LOGGER = ComponentLogger.logger();
@@ -202,7 +202,7 @@ public class AdventureFabricTester implements ModInitializer {
           }));
           return 1;
         }))))
-        .then(literal("sound").then(argument(ARG_SOUND, key()).suggests(SuggestionProviders.cast(SuggestionProviders.AVAILABLE_SOUNDS)).executes(ctx -> {
+        .then(literal("sound").then(argument(ARG_SOUND, key()).suggests(SuggestAvailableSounds.suggestAvailableSounds()).executes(ctx -> {
           final Audience viewer = this.adventure().audience(ctx.getSource());
           final Key sound = key(ctx, ARG_SOUND);
           viewer.sendMessage(text(b -> b.content("Playing sound ").append(represent(sound)).color(COLOR_RESPONSE)));

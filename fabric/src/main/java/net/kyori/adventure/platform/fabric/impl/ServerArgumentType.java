@@ -1,7 +1,7 @@
 /*
  * This file is part of adventure-platform-mod, licensed under the MIT License.
  *
- * Copyright (c) 2022-2025 KyoriPowered
+ * Copyright (c) 2023-2026 KyoriPowered
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,27 +24,25 @@
 package net.kyori.adventure.platform.fabric.impl;
 
 import com.mojang.brigadier.arguments.ArgumentType;
-import com.mojang.brigadier.suggestion.SuggestionProvider;
-import java.util.function.BiFunction;
-import net.minecraft.commands.CommandBuildContext;
-import net.minecraft.commands.synchronization.ArgumentTypeInfo;
+import java.util.function.Function;
+import net.minecraft.commands.arguments.SerializableArgument;
+import net.minecraft.commands.suggestions.CustomSuggestion;
 import net.minecraft.resources.Identifier;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * An argument type that only needs to be known on the server.
  *
  * @param id argument id
- * @param type argument type
- * @param argumentTypeInfo argument type info
+ * @param type serializable argument type
  * @param fallbackProvider fallback type provider
  * @param fallbackSuggestions fallback suggestions provider
- * @param <T> argument type
+ * @param <A> argument type
  */
-public record ServerArgumentType<T extends ArgumentType<?>>(
+public record ServerArgumentType<A extends SerializableArgument<?>>(
   Identifier id,
-  Class<? super T> type,
-  ArgumentTypeInfo<T, ? extends ArgumentTypeInfo.Template<T>> argumentTypeInfo,
-  BiFunction<T, CommandBuildContext, ArgumentType<?>> fallbackProvider,
-  SuggestionProvider<?> fallbackSuggestions
+  SerializableArgument.Type<A> type,
+  Function<A, ArgumentType<?>> fallbackProvider,
+  @Nullable CustomSuggestion fallbackSuggestions
 ) {
 }

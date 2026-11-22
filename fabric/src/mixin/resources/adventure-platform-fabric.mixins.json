@@ -4,11 +4,9 @@
   "mixins": [
     "api.KeyMixin",
     "brigadier.exceptions.CommandSyntaxExceptionMixin",
-    "minecraft.commands.CommandsMixin",
-    "minecraft.commands.synchronization.ArgumentTypeInfosMixin",
-    "minecraft.commands.synchronization.ArgumentUtilsMixin",
-    "minecraft.network.protocol.game.ClientboundCommandsPacketMixin",
-    "minecraft.network.protocol.game.ClientboundCommandsPacketMixin$ArgumentNodeStubMixin",
+    "minecraft.commands.ArgumentUtilsMixin",
+    "minecraft.commands.SuggestionBoxMixin",
+    "minecraft.commands.arguments.SerializableArgumentTypesMixin",
     "minecraft.server.level.ServerPlayerMixin",
     "minecraft.server.players.PlayerListMixin"
   ]

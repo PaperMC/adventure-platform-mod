@@ -46,8 +46,8 @@ custom:
     net/minecraft/world/item/ItemStackTemplate: [ "net/kyori/adventure/text/event/HoverEventSource<Lnet/kyori/adventure/text/event/HoverEvent<%= '$' %>ShowItem;>" ] # generic?
 
 depends:
-  minecraft: "~26.3-"
-  fabricloader: ">=0.19.2"
+  minecraft: "~26.4-"
+  fabricloader: ">=0.20.1"
   fabric-api-base: "*"
   fabric-command-api-v2: "*"
 

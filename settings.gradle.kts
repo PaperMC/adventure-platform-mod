@@ -26,8 +26,8 @@ pluginManagement {
 plugins {
   id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
   id("net.kyori.indra.publishing.central") version "4.1.0"
-  id("net.fabricmc.fabric-loom-repositories") version "1.18.2"
-  id("net.neoforged.moddev.repositories") version "2.0.147"
+  id("net.fabricmc.fabric-loom-repositories") version "1.19.4"
+  id("net.neoforged.moddev.repositories") version "2.0.148"
 }
 
 rootProject.name = "adventure-platform-mod-parent"
@@ -50,7 +50,7 @@ dependencyResolutionManagement {
 
   versionCatalogs {
     create("fabricApiLibs") {
-      from("net.fabricmc.fabric-api:fabric-api-catalog:0.160.6+26.3")
+      from("net.fabricmc.fabric-api:fabric-api-catalog:0.166.4+26.4")
     }
   }
 }
@@ -69,6 +69,7 @@ findProject(":test-resources")?.projectDir = file("mod-shared/test-resources")
 // Fabric
 includeAndRename("fabric")
 
-includeAndRename("neoforge")
-includeAndRename("adventure-platform-neoforge:tester", "neoforge-tester")
-includeAndRename("adventure-platform-neoforge:services", "neoforge-services")
+// TODO(26.4): re-enable once NeoForge publishes 26.4 builds
+// includeAndRename("neoforge")
+// includeAndRename("adventure-platform-neoforge:tester", "neoforge-tester")
+// includeAndRename("adventure-platform-neoforge:services", "neoforge-services")

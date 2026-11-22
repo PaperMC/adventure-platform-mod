@@ -90,7 +90,6 @@ public final class ClickCallbackRegistry {
 
   public void registerToDispatcher(final CommandDispatcher<CommandSourceStack> dispatcher) {
     dispatcher.register(Commands.literal(COMMAND_NAME)
-      .requires(HiddenRequirement.alwaysAllowed()) // hide from client tab completion
       .then(Commands.argument(UUID_ARG, UuidArgument.uuid())
         .executes(ctx -> {
           final UUID callbackId = UuidArgument.getUuid(ctx, UUID_ARG);

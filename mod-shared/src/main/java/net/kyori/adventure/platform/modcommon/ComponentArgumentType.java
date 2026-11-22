@@ -1,7 +1,7 @@
 /*
  * This file is part of adventure-platform-mod, licensed under the MIT License.
  *
- * Copyright (c) 2020-2025 KyoriPowered
+ * Copyright (c) 2020-2026 KyoriPowered
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,8 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
+import com.mojang.serialization.DataResult;
 import java.util.Collection;
 import java.util.List;
 import net.kyori.adventure.Adventure;
@@ -37,7 +39,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.kyori.adventure.util.Index;
-import net.minecraft.commands.arguments.ComponentArgument;
+import net.minecraft.commands.arguments.SerializableArgument;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.NotNull;
 
@@ -52,7 +55,22 @@ import static java.util.Objects.requireNonNull;
  *
  * @since 6.0.0
  */
-public final class ComponentArgumentType implements ArgumentType<Component> {
+public final class ComponentArgumentType implements SerializableArgument.ContextFree<Component> {
+  /**
+   * The serializable argument type for component arguments.
+   *
+   * @since 7.3.0
+   */
+  public static final SerializableArgument.Type<ComponentArgumentType> TYPE = new SerializableArgument.Type<>(
+    Identifier.CODEC.comapFlatMap(ComponentArgumentType::formatById, f -> MinecraftAudiences.asNative(f.id())).fieldOf("serializer").xmap(ComponentArgumentType::of, ComponentArgumentType::format),
+    Identifier.STREAM_CODEC.<RegistryFriendlyByteBuf>cast().map(
+      id -> of(formatById(id).getOrThrow(IllegalArgumentException::new)),
+      arg -> MinecraftAudiences.asNative(arg.format().id())
+    )
+  );
+  private static final DynamicCommandExceptionType ERROR_INVALID_COMPONENT = new DynamicCommandExceptionType(
+    message -> net.minecraft.network.chat.Component.translatableEscape("argument.component.invalid", message)
+  );
   private static final ComponentArgumentType JSON_INSTANCE = new ComponentArgumentType(Format.JSON);
   private static final ComponentArgumentType MINIMESSAGE_INSTANCE = new ComponentArgumentType(Format.MINIMESSAGE);
 
@@ -74,8 +92,8 @@ public final class ComponentArgumentType implements ArgumentType<Component> {
    * @return argument type instance
    * @since 6.0.0
    */
-  public static @NotNull ComponentArgumentType json() {
-    return JSON_INSTANCE;
+  public static @NotNull ArgumentType<Component> json() {
+    return JSON_INSTANCE.toBrigadier();
   }
 
   /**
@@ -84,8 +102,8 @@ public final class ComponentArgumentType implements ArgumentType<Component> {
    * @return argument type instance
    * @since 6.0.0
    */
-  public static @NotNull ComponentArgumentType miniMessage() {
-    return MINIMESSAGE_INSTANCE;
+  public static @NotNull ArgumentType<Component> miniMessage() {
+    return MINIMESSAGE_INSTANCE.toBrigadier();
   }
 
   /**
@@ -95,11 +113,20 @@ public final class ComponentArgumentType implements ArgumentType<Component> {
    * @return an argument type
    * @since 6.0.0
    */
-  public static @NotNull ComponentArgumentType component(final @NotNull Format format) {
+  public static @NotNull ArgumentType<Component> component(final @NotNull Format format) {
+    return of(format).toBrigadier();
+  }
+
+  private static ComponentArgumentType of(final Format format) {
     return switch (format) {
       case JSON -> JSON_INSTANCE;
       case MINIMESSAGE -> MINIMESSAGE_INSTANCE;
     };
+  }
+
+  private static DataResult<Format> formatById(final Identifier id) {
+    final Format format = Format.INDEX.value(MinecraftAudiences.asAdventure(id));
+    return format == null ? DataResult.error(() -> "Unknown Adventure component format: " + id) : DataResult.success(format);
   }
 
   private final Format format;
@@ -117,8 +144,13 @@ public final class ComponentArgumentType implements ArgumentType<Component> {
       return result.parsed();
     } catch (final Exception ex) {
       final String message = ex.getCause() == null ? ex.getMessage() : ex.getCause().getMessage();
-      throw ComponentArgument.ERROR_INVALID_COMPONENT.createWithContext(reader, message);
+      throw ERROR_INVALID_COMPONENT.createWithContext(reader, message);
     }
+  }
+
+  @Override
+  public SerializableArgument.@NotNull Type<ComponentArgumentType> type() {
+    return TYPE;
   }
 
   @Override

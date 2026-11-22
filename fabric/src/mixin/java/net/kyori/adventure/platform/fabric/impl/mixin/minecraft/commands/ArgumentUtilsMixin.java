@@ -1,7 +1,7 @@
 /*
  * This file is part of adventure-platform-mod, licensed under the MIT License.
  *
- * Copyright (c) 2022-2024 KyoriPowered
+ * Copyright (c) 2023-2026 KyoriPowered
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,33 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package net.kyori.adventure.platform.fabric.impl.mixin.minecraft.commands.synchronization;
+package net.kyori.adventure.platform.fabric.impl.mixin.minecraft.commands;
 
-import com.mojang.brigadier.arguments.ArgumentType;
-import net.kyori.adventure.platform.fabric.impl.ServerArgumentType;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.mojang.serialization.Codec;
 import net.kyori.adventure.platform.fabric.impl.ServerArgumentTypes;
-import net.minecraft.commands.synchronization.ArgumentTypeInfo;
-import net.minecraft.commands.synchronization.ArgumentTypeInfos;
+import net.minecraft.commands.ArgumentUtils;
+import net.minecraft.commands.arguments.SerializableArgument;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(ArgumentTypeInfos.class)
-public abstract class ArgumentTypeInfosMixin {
-  @Inject(
-    method = "unpack(Lcom/mojang/brigadier/arguments/ArgumentType;)Lnet/minecraft/commands/synchronization/ArgumentTypeInfo$Template;",
-    at = @At("HEAD"),
-    cancellable = true
+/**
+ * Name server argument types in command tree reports.
+ */
+@Mixin(ArgumentUtils.class)
+public abstract class ArgumentUtilsMixin {
+  @ModifyExpressionValue(
+    method = "<clinit>",
+    at = @At(value = "INVOKE", target = "Lnet/minecraft/core/Registry;byNameCodec()Lcom/mojang/serialization/Codec;")
   )
-  @SuppressWarnings("unchecked")
-  private static <A extends ArgumentType<?>> void unpackServerArgument(
-    final A argumentType,
-    final CallbackInfoReturnable<ArgumentTypeInfo.Template<?>> cir
-  ) {
-    final ServerArgumentType<A> serverType = (ServerArgumentType<A>) ServerArgumentTypes.byClass(argumentType.getClass());
-    if (serverType != null) {
-      cir.setReturnValue(serverType.argumentTypeInfo().unpack(argumentType));
-    }
+  private static Codec<SerializableArgument.Type<?>> adventure$wrapReportCodec(final Codec<SerializableArgument.Type<?>> original) {
+    return ServerArgumentTypes.wrapNameCodec(original);
   }
 }
