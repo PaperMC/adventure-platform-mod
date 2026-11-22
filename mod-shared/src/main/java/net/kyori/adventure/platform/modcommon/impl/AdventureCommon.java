@@ -184,9 +184,36 @@ public final class AdventureCommon {
     );
   }
 
+  /**
+   * Convert a bound chat type, wrapping its name and target with {@link MinecraftAudiencesInternal#asNative}.
+   *
+   * <p>Wrapped components are rendered lazily, for the receiver when a packet is encoded or when the client displays them.
+   * Turning the result into a string has no receiver, so it renders for empty pointers. Callers that flatten the result
+   * themselves should render for their target with {@link #chatTypeToNative(ChatType.Bound, MinecraftAudiencesInternal, Function)}.</p>
+   *
+   * @param bound the bound chat type
+   * @param rendererProvider the controller to convert with
+   * @return the native bound chat type
+   */
   public static net.minecraft.network.chat.ChatType.@NotNull Bound chatTypeToNative(
     final ChatType.@NotNull Bound bound,
     final MinecraftAudiencesInternal rendererProvider
+  ) {
+    return chatTypeToNative(bound, rendererProvider, rendererProvider::asNative);
+  }
+
+  /**
+   * Convert a bound chat type, converting its name and target with {@code converter}.
+   *
+   * @param bound the bound chat type
+   * @param rendererProvider the controller to look up the chat type with
+   * @param converter converts the name and target
+   * @return the native bound chat type
+   */
+  public static net.minecraft.network.chat.ChatType.@NotNull Bound chatTypeToNative(
+    final ChatType.@NotNull Bound bound,
+    final MinecraftAudiencesInternal rendererProvider,
+    final Function<Component, net.minecraft.network.chat.Component> converter
   ) {
     final Holder<net.minecraft.network.chat.ChatType> type = rendererProvider.registryAccess()
       .lookupOrThrow(Registries.CHAT_TYPE)
@@ -195,8 +222,8 @@ public final class AdventureCommon {
 
     return new net.minecraft.network.chat.ChatType.Bound(
       type,
-      rendererProvider.asNative(bound.name()),
-      Optional.ofNullable(bound.target()).map(rendererProvider::asNative)
+      converter.apply(bound.name()),
+      Optional.ofNullable(bound.target()).map(converter)
     );
   }
 

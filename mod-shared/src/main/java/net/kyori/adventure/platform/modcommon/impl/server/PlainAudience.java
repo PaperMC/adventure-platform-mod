@@ -52,12 +52,20 @@ public final class PlainAudience implements ControlledAudience {
 
   @Override
   public void sendMessage(final @NotNull Component message) {
-    this.plainOutput.accept(PlainTextComponentSerializer.plainText().serialize(message));
+    this.plainOutput.accept(PlainTextComponentSerializer.plainText().serialize(this.render(message)));
   }
 
   @Override
   public void sendMessage(final @NotNull Component message, final ChatType.@NotNull Bound boundChatType) {
-    this.plainOutput.accept(AdventureCommon.chatTypeToNative(boundChatType, this.controller).decorate(this.controller.asNative(message)).getString());
+    this.plainOutput.accept(AdventureCommon.chatTypeToNative(boundChatType, this.controller, this::renderNative).decorate(this.renderNative(message)).getString());
+  }
+
+  private Component render(final Component message) {
+    return this.controller.renderer().render(message, this.source);
+  }
+
+  private net.minecraft.network.chat.Component renderNative(final Component message) {
+    return this.controller.nonWrappingSerializer().serialize(this.render(message));
   }
 
   @Override
