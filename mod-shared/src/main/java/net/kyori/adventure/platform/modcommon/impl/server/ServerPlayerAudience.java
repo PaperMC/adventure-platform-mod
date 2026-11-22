@@ -45,7 +45,6 @@ import net.kyori.adventure.resource.ResourcePackRequest;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.sound.SoundStop;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
 import net.kyori.adventure.title.TitlePart;
 import net.minecraft.core.component.DataComponentPatch;
@@ -72,7 +71,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.WritableBookContent;
 import net.minecraft.world.item.component.WrittenBookContent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -195,12 +193,10 @@ public class ServerPlayerAudience implements ControlledAudience {
 
   @Override
   public void openBook(final @NotNull Book book) {
-    if (book.pages().size() > WritableBookContent.MAX_PAGES) {
-      throw new IllegalArgumentException("Book provided had " + book.pages().size() + " pages, but is only allowed a maximum of " + WritableBookContent.MAX_PAGES);
-    }
+    // The book screen only shows pages, so the title and author are never visible
     final WrittenBookContent content = new WrittenBookContent(
-      Filterable.passThrough(validateField(this.adventure$plain(book.title()), WrittenBookContent.TITLE_MAX_LENGTH, "title")),
-      this.adventure$plain(book.author()),
+      Filterable.passThrough(""),
+      "",
       0,
       book.pages().stream()
         .map(this.controller::asNative)
@@ -225,22 +221,6 @@ public class ServerPlayerAudience implements ControlledAudience {
         new ClientboundSetPlayerInventoryPacket(slot, selectedItem)
       )
     ));
-  }
-
-  private static String validateField(final String content, final int length, final String name) {
-    if (content == null) {
-      return content;
-    }
-
-    final int actual = content.length();
-    if (actual > length) {
-      throw new IllegalArgumentException("Field '" + name + "' has a maximum length of " + length + " but was passed '" + content + "', which was " + actual + " characters long.");
-    }
-    return content;
-  }
-
-  private String adventure$plain(final @NotNull Component component) {
-    return PlainTextComponentSerializer.plainText().serialize(this.controller.renderer().render(component, this));
   }
 
   @Override
