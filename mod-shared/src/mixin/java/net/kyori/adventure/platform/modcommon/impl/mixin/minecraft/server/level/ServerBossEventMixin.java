@@ -36,28 +36,19 @@ import net.minecraft.world.BossEvent;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ServerBossEvent.class)
 public abstract class ServerBossEventMixin extends BossEvent implements ServerBossEventBridge {
   // @formatter:off
-  @Unique private static final float MINIMUM_PERCENT_CHANGE = 5e-4f;
-
   @Shadow @Final private Set<ServerPlayer> players;
 
   @Shadow public abstract boolean shadow$isVisible();
   // @formatter:on
 
-  @Unique
-  private float adventure$lastSentPercent;
-
   public ServerBossEventMixin(final UUID uuid, final Component name, final BossBarColor color, final BossBarOverlay style) {
     super(uuid, name, color, style);
-    this.adventure$lastSentPercent = this.progress;
   }
 
   // If a player has respawned, we still want to be able to remove the player using old references to their entity
@@ -104,19 +95,6 @@ public abstract class ServerBossEventMixin extends BossEvent implements ServerBo
   public void adventure$replaceSubscriber(final ServerPlayer oldSub, final ServerPlayer newSub) {
     if (this.players.remove(oldSub)) {
       this.players.add(newSub);
-    }
-  }
-
-  // Optimization -- don't send a packet for tiny changes
-
-  @Inject(method = "setProgress", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/BossEvent;setProgress(F)V"), cancellable = true, require = 0)
-  private void adventure$onlySetPercentIfBigEnough(final float newPercent, final CallbackInfo ci) {
-    if (Math.abs(newPercent - this.adventure$lastSentPercent) < MINIMUM_PERCENT_CHANGE) {
-      this.progress = newPercent;
-      ci.cancel();
-    } else {
-      this.adventure$lastSentPercent = newPercent;
-      // continue as normal
     }
   }
 }
