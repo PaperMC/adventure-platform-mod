@@ -19,15 +19,6 @@ For any new features or typo-fix/style changes, please open an issue or come tal
 
 All the adventure projects are built with Gradle and use a common checkstyle configuration. `adventure-platform-mod` requires the same Java version that Minecraft itself does in the target version. Please make sure all tests pass, license headers are updated, and checkstyle passes to help us review your contribution.
 
-An unfortunate quirk with Loom is that it resolves dependencies in the configuration phase, before any task execution can happen, so we have to run Gradle twice to generate templates (the first without the daemon, since loom caches some information), then apply our in-project interface injections. Sorry!
-
-This looks like:
-
-```sh
-$ ./gradlew --no-daemon generateTemplates
-$ ./gradlew build
-```
-
 To have browsable game source in your IDE, run `./gradlew genSources` before importing the mod
 
 `adventure-platform-mod` is released under the terms of the [MIT License](LICENSE).
