@@ -1,7 +1,7 @@
 /*
  * This file is part of adventure-platform-mod, licensed under the MIT License.
  *
- * Copyright (c) 2023-2024 KyoriPowered
+ * Copyright (c) 2026 KyoriPowered
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,16 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package net.kyori.adventure.platform.fabric;
+package net.kyori.adventure.platform.test.fabric.gametest.mixin;
 
-import org.junit.jupiter.api.Test;
-import org.spongepowered.asm.mixin.MixinEnvironment;
+import net.minecraft.client.gui.Hud;
+import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.Nullable;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-
-class MixinAuditTest extends BootstrappedTest {
-  @Test
-  void testMixinApplication() {
-    assertDoesNotThrow(() -> MixinEnvironment.getCurrentEnvironment().audit());
-  }
+@Mixin(Hud.class)
+public interface HudAccess {
+  @Accessor("title")
+  @Nullable Component gametest$title();
 }

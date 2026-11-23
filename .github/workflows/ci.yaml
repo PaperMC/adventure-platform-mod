@@ -32,7 +32,8 @@ jobs:
       - name: "prime gradle build"
         run: "./gradlew --no-daemon generateTemplates generateTestmodTemplates --stacktrace" # Bonk loom
       - name: "run gradle build"
-        run: "./gradlew build --stacktrace"
+        # The game tests run against the built jars in a later step instead
+        run: "./gradlew build -x runGameTest -x runClientGameTest --stacktrace"
       - name: "archive test results"
         if: "${{ always() }}"
         uses: "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" # v7.0.1
@@ -51,54 +52,8 @@ jobs:
             echo "STATUS=release" >> $GITHUB_ENV
           fi
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-      - name: "Cache test run data"
-        uses: "actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9" # v6.1.0
-        with:
-          path: |
-            testserver/libraries
-            testserver/versions
-            testserver/.fabric/server
-            testserver/world
-          key: testserver-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: testserver-${{ runner.os }}-
-      - name: "Execute production test run"
-        shell: bash
-        run: |
-          echo "::group::Environment Setup"
-          pip install yq
-          mkdir -p testserver/mods
-          MC_VERSION="$(tomlq -r '.versions.minecraft' gradle/libs.versions.toml)"
-          LOADER_VERSION="$(tomlq -r '.versions.fabricLoader' gradle/libs.versions.toml)"
-          API_VERSION="$(tomlq -r '.versions.fabricApi' gradle/libs.versions.toml)"
-          # Download fabric server launch
-          curl https://meta.fabricmc.net/v2/versions/loader/$MC_VERSION/$LOADER_VERSION/0.11.0/server/jar -o testserver/fabric-server.jar
-          # eula=true
-          echo "eula=true" > testserver/eula.txt
-          # copy artifact into mods folder
-          cp fabric/build/libs/adventure-platform-fabric-$VERSION.jar testserver/mods/adventure-platform-fabric.jar
-          # copy API
-          API_URL=$(curl https://api.modrinth.com/v2/project/fabric-api/version | jq ". | map(select(.version_number == \"$API_VERSION\")) | .[0].files[0].url" -r)
-          echo "Downloading Fabric API from $API_URL"
-          curl -L "$API_URL" -o testserver/mods/fabric-api.jar
-          echo "::endgroup::" # Environment Setup
-          echo "::group::Server Execution"
-          pushd testserver/
-          java -Dadventure.testMode=true -jar fabric-server.jar nogui
-          if [[ -d "crash-reports" ]]; then
-            for i in crash-reports/*.txt; do
-              echo "::error title=Server crashed::$(cat $i)"
-            done
-          fi
-          popd
-          echo "::endgroup" # Server Execution
-          echo "# Server Execution" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          cat testserver/logs/latest.log >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          if [ ! -e "testserver/adventure-test-success.out" ]; then
-            echo "::error::Server did not exit successfully, see logs for details"
-            exit 1
-          fi
+      - name: "run game tests against the built jars"
+        run: "./gradlew productionServerGameTest productionClientGameTest --stacktrace"
       - name: "publish snapshot"
         if: "${{ runner.os == 'Linux' && env.STATUS != 'release' && github.event_name == 'push' && steps.setup.outputs.publishing_branch != '' }}"
         run: "./gradlew publishAllPublicationsToSonatypeRepository"

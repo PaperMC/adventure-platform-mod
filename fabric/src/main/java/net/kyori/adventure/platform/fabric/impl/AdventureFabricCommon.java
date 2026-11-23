@@ -25,13 +25,9 @@ package net.kyori.adventure.platform.fabric.impl;
 
 import com.google.auto.service.AutoService;
 import com.mojang.logging.LogUtils;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Locale;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.kyori.adventure.platform.fabric.CollectPointersCallback;
 import net.kyori.adventure.platform.fabric.PlayerLocales;
@@ -49,7 +45,6 @@ import net.minecraft.commands.arguments.StringArgument;
 import net.minecraft.server.level.ServerPlayer;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
-import org.spongepowered.asm.mixin.MixinEnvironment;
 
 public class AdventureFabricCommon implements ModInitializer {
 
@@ -91,23 +86,6 @@ public class AdventureFabricCommon implements ModInitializer {
     this.setupCustomArgumentTypes();
 
     AdventureCommon.scheduleClickCallbackCleanup();
-
-    // If we are in development mode, shut down immediately
-    if (Boolean.getBoolean("adventure.testMode")) {
-      if (FabricLoader.getInstance().getEnvironmentType() == EnvType.SERVER) {
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-          MixinEnvironment.getCurrentEnvironment().audit();
-          server.execute(() -> {
-            try {
-              Files.writeString(Path.of("adventure-test-success.out"), "true");
-            } catch (final IOException ex) {
-              System.exit(1);
-            }
-            server.halt(false);
-          });
-        });
-      }
-    }
   }
 
   private void setupCustomArgumentTypes() {

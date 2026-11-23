@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "compatibilityLevel": "JAVA_25",
+  "package": "net.kyori.adventure.platform.test.fabric.gametest.mixin",
+  "client": [
+    "BookViewScreenAccess",
+    "BossHealthOverlayAccess",
+    "ChatComponentAccess",
+    "ClientPacketListenerMixin",
+    "HudAccess",
+    "PlayerTabOverlayAccess"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

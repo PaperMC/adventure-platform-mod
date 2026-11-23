@@ -1,5 +1,8 @@
+import java.time.Duration
 import net.fabricmc.loom.task.GenerateSourcesTask
 import net.fabricmc.loom.task.RunGameTask
+import net.fabricmc.loom.task.prod.ClientProductionRunTask
+import net.fabricmc.loom.task.prod.ServerProductionRunTask
 
 plugins {
   id("net.fabricmc.fabric-loom")
@@ -22,8 +25,6 @@ dependencies {
   api(fabricApiLibs.base)
   implementation(fabricApiLibs.networking.api.v1)
   implementation(fabricApiLibs.command.api.v2)
-  // Only used for prod test
-  compileOnly(fabricApiLibs.lifecycle.events.v1)
 
   minecraft(libs.minecraft)
   implementation(libs.fabric.loader)
@@ -87,6 +88,23 @@ fun createSecondarySet(name: String, action: Action<SourceSet> = Action { }): So
 val testmod = createSecondarySet("testmod") {
   java.srcDirs("src/testmodMixin/java")
   resources.srcDirs("src/testmodMixin/resources")
+}
+
+// Automated game tests, kept apart from the manual testmod
+fabricApi {
+  configureTests {
+    createSourceSet = true
+    modId = "adventure-platform-fabric-gametest"
+    enableGameTests = true
+    enableClientGameTests = true
+    eula = true
+    clearRunDirectory = true
+  }
+}
+val gametest = sourceSets.named("gametest")
+// Loom only adds the server run to check, so add the client run too
+tasks.check {
+  dependsOn("runClientGameTest")
 }
 
 val enablePermissionsApiCompat = true
@@ -163,6 +181,7 @@ val testResourcesDirs = configurations.resolvable("testResourcesDirs") {
 
 dependencies {
   if (enablePermissionsApiCompat) "testmodRuntimeOnly"(permissionsApiCompat.output)
+  if (enablePermissionsApiCompat) "gametestRuntimeOnly"(permissionsApiCompat.output)
   testResources(project(":test-resources"))
   "testmodRuntimeOnly"(files(testResourcesDirs))
   if (enablePermissionsApiCompat) "permissionsApiCompat"(libs.fabric.permissionsApi) {
@@ -171,6 +190,7 @@ dependencies {
 
   // Testmod-specific dependencies
   "testmod"(fabricApiLibs.fabric.api)
+  "gametestImplementation"(fabricApiLibs.fabric.api)
 }
 
 // Create a testmod jar
@@ -182,6 +202,45 @@ val testmodJar = tasks.register("testmodJar", Jar::class) {
 
 tasks.build {
   dependsOn(testmodJar)
+}
+
+// Run the game tests against the built jars, installed like a player would
+val gametestJar = tasks.register("gametestJar", Jar::class) {
+  from(gametest.map { it.output })
+  archiveClassifier = "gametest"
+}
+val productionTestMods = configurations.dependencyScope("productionTestMods")
+val productionTestModFiles = configurations.resolvable("productionTestModFiles") {
+  extendsFrom(productionTestMods.get())
+  isTransitive = false
+}
+dependencies {
+  productionTestMods(fabricApiLibs.fabric.api)
+  // Not bundled in the Fabric API jar
+  productionTestMods(fabricApiLibs.gametest.api.v1)
+  productionTestMods(fabricApiLibs.client.gametest.api.v1)
+}
+
+tasks.register("productionServerGameTest", ServerProductionRunTask::class) {
+  mods.from(tasks.jar, gametestJar, productionTestModFiles)
+  jvmArgs.add("-Dfabric-api.gametest")
+  runDir = layout.buildDirectory.dir("run/productionServerGameTest")
+  // Cut off a hung run instead of letting it use up the CI job
+  timeout = Duration.ofMinutes(10)
+}
+tasks.register("productionClientGameTest", ClientProductionRunTask::class) {
+  mods.from(tasks.jar, gametestJar, productionTestModFiles)
+  jvmArgs.add("-Dfabric.client.gametest")
+  // Fail instead of waiting on Fabric Loader's error window, which nobody can close under XVFB
+  jvmArgs.add("-Dfabric.noGui=true")
+  runDir = layout.buildDirectory.dir("run/productionClientGameTest")
+  // Cut off a hung run instead of letting it use up the CI job
+  timeout = Duration.ofMinutes(10)
+  // The client tests start a dedicated server in the run directory
+  doFirst {
+    runDir.get().asFile.mkdirs()
+    runDir.file("eula.txt").get().asFile.writeText("eula=true")
+  }
 }
 
 tasks {
@@ -196,9 +255,10 @@ tasks {
 
 val generateTemplates = createProcessResourceTemplates("generateTemplates", sourceSets.main.get())
 val generateTestmodTemplates = createProcessResourceTemplates("generateTestmodTemplates", testmod)
+val generateGametestTemplates = createProcessResourceTemplates("generateGametestTemplates", gametest.get())
 
 tasks.withType(GenerateSourcesTask::class).configureEach {
-  dependsOn(generateTemplates)
+  dependsOn(generateTemplates, generateTestmodTemplates, generateGametestTemplates)
 }
 
 // Workaround for both loom and indra doing publication logic in an afterEvaluate :(
