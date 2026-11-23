@@ -46,12 +46,6 @@ public class ServerBossBarListener extends AbstractBossBarListener<ServerBossEve
     this.minecraftCreating(requireNonNull(bar, "bar")).addPlayer(requireNonNull(player, "player"));
   }
 
-  /*
-  public void subscribeAll(final Collection<ServerPlayer> players, final BossBar bar) {
-    ((ServerBossEventBridge) this.minecraftCreating(requireNonNull(bar, "bar"))).adventure$addAll(players);
-  }
-   */
-
   public void unsubscribe(final ServerPlayer player, final BossBar bar) {
     this.bars.computeIfPresent(bar, (key, old) -> {
       old.removePlayer(player);
@@ -64,25 +58,12 @@ public class ServerBossBarListener extends AbstractBossBarListener<ServerBossEve
     });
   }
 
-  /*
-  public void unsubscribeAll(final Collection<ServerPlayer> players, final BossBar bar) {
-    this.bars.computeIfPresent(bar, (key, old) -> {
-      ((ServerBossEventBridge) old).adventure$removeAll(players);
-      if (old.getPlayers().isEmpty()) {
-        key.removeListener(this);
-        return null;
-      } else {
-        return old;
-      }
-    });
-  }
-   */
-
   /**
    * Replace a player entity without sending any packets.
    *
-   * <p>This should be triggered when the entity representing a player changes
-   * (such as during a respawn)</p>
+   * <p>This should be triggered when the entity representing a player changes, such as during a respawn.
+   * The new entity keeps the old one's id, so it already counts as the same player, but replacing it
+   * stops the bars from holding on to the old entity.</p>
    *
    * @param old old player
    * @param newPlayer new one
