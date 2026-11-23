@@ -1,0 +1,22 @@
+{
+  "chat": {
+    "parameters": [
+      "sender",
+      "content"
+    ],
+    "translation_key": "[%s] >> %s",
+    "style": {
+      "bold": true
+    }
+  },
+  "narration": {
+    "parameters": [
+      "sender",
+      "content"
+    ],
+    "translation_key": "[%s] >> %s",
+    "style": {
+      "bold": true
+    }
+  }
+}
