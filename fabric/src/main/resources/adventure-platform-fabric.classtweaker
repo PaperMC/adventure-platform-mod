@@ -1,0 +1,20 @@
+classTweaker v1 official
+accessible field net/minecraft/network/chat/contents/TranslatableContents PRIMITIVE_ARG_CODEC Lcom/mojang/serialization/Codec;
+accessible class net/minecraft/world/item/component/ResolvableProfile$Partial
+accessible method net/minecraft/world/item/component/ResolvableProfile$Partial <init> (Ljava/util/Optional;Ljava/util/Optional;Lcom/mojang/authlib/properties/PropertyMap;)V
+accessible field net/minecraft/world/item/component/ResolvableProfile$Partial MAP_CODEC Lcom/mojang/serialization/MapCodec;
+accessible method net/minecraft/resources/RegistryOps <init> (Lcom/mojang/serialization/DynamicOps;Lnet/minecraft/core/HolderGetter$Provider;)V
+accessible field net/minecraft/resources/RegistryOps getterProvider Lnet/minecraft/core/HolderGetter$Provider;
+
+transitive-inject-interface net/minecraft/commands/CommandSourceStack net/kyori/adventure/platform/modcommon/AdventureCommandSourceStack
+transitive-inject-interface net/minecraft/world/entity/Entity net/kyori/adventure/sound/Sound$Emitter
+transitive-inject-interface net/minecraft/world/entity/Entity net/kyori/adventure/platform/modcommon/EntityHoverEventSource
+transitive-inject-interface net/minecraft/server/MinecraftServer net/kyori/adventure/audience/Audience
+transitive-inject-interface net/minecraft/world/entity/player/Player net/kyori/adventure/platform/modcommon/IdentifiedAtRuntime
+transitive-inject-interface net/minecraft/server/rcon/RconConsoleSource net/kyori/adventure/audience/Audience
+transitive-inject-interface net/minecraft/server/level/ServerPlayer net/kyori/adventure/audience/Audience
+transitive-inject-interface net/minecraft/server/network/ServerConfigurationPacketListenerImpl net/kyori/adventure/audience/Audience
+transitive-inject-interface net/minecraft/client/player/LocalPlayer net/kyori/adventure/audience/Audience
+transitive-inject-interface net/minecraft/resources/Identifier net/kyori/adventure/key/Key
+transitive-inject-interface net/minecraft/sounds/SoundEvent net/kyori/adventure/sound/Sound$Type
+transitive-inject-interface net/minecraft/resources/ResourceKey net/kyori/adventure/key/Keyed

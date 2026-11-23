@@ -1,11 +1,7 @@
 import java.time.Duration
-import net.fabricmc.loom.task.GenerateSourcesTask
 import net.fabricmc.loom.task.RunGameTask
 import net.fabricmc.loom.task.prod.ClientProductionRunTask
 import net.fabricmc.loom.task.prod.ServerProductionRunTask
-import org.gradle.plugins.ide.idea.model.IdeaModel
-import org.jetbrains.gradle.ext.settings
-import org.jetbrains.gradle.ext.taskTriggers
 import io.leangen.geantyref.TypeFactory
 import xyz.jpenilla.resourcefactory.fabric.Environment
 
@@ -129,7 +125,7 @@ sourceSets {
 }
 
 loom {
-  accessWidenerPath = file("src/main/resources/adventure-platform-fabric.accesswidener")
+  accessWidenerPath = file("src/main/resources/adventure-platform-fabric.classtweaker")
   runs {
     register("testmodClient") {
       sourceSet = "testmod"
@@ -282,7 +278,7 @@ sourceSets.main {
     clientEntrypoint("net.kyori.adventure.platform.fabric.impl.client.AdventureFabricClient")
     entrypoint("adventure-internal:sidedproxy/client", "net.kyori.adventure.platform.modcommon.impl.client.ClientProxy")
     entrypoint("adventure-internal:sidedproxy/server", "net.kyori.adventure.platform.modcommon.impl.server.DedicatedServerProxy")
-    accessWidener = "adventure-platform-fabric.accesswidener"
+    accessWidener = "adventure-platform-fabric.classtweaker"
     mixin("adventure-platform-fabric.accessor.mixins.json")
     mixin("adventure-platform-fabric.mixins.json")
     mixin("adventure-platform-mod-shared.accessor.mixins.json")
@@ -292,19 +288,6 @@ sourceSets.main {
 
     // The map's values are generic, so give the full type, as resource-factory documents for typedSimpleCustomValue
     custom("modmenu", typedSimpleCustomValue(stringListMap, mapOf("badges" to listOf("library"))))
-    custom("loom:injected_interfaces", typedSimpleCustomValue(stringListMap, mapOf(
-      "net/minecraft/commands/CommandSourceStack" to listOf("net/kyori/adventure/platform/modcommon/AdventureCommandSourceStack"),
-      "net/minecraft/world/entity/Entity" to listOf("net/kyori/adventure/sound/Sound\$Emitter", "net/kyori/adventure/platform/modcommon/EntityHoverEventSource"),
-      "net/minecraft/server/MinecraftServer" to listOf("net/kyori/adventure/audience/Audience"),
-      "net/minecraft/world/entity/player/Player" to listOf("net/kyori/adventure/platform/modcommon/IdentifiedAtRuntime"),
-      "net/minecraft/server/rcon/RconConsoleSource" to listOf("net/kyori/adventure/audience/Audience"),
-      "net/minecraft/server/level/ServerPlayer" to listOf("net/kyori/adventure/audience/Audience"),
-      "net/minecraft/server/network/ServerConfigurationPacketListenerImpl" to listOf("net/kyori/adventure/audience/Audience"),
-      "net/minecraft/client/player/LocalPlayer" to listOf("net/kyori/adventure/audience/Audience"),
-      "net/minecraft/resources/Identifier" to listOf("net/kyori/adventure/key/Key"),
-      "net/minecraft/sounds/SoundEvent" to listOf("net/kyori/adventure/sound/Sound\$Type"),
-      "net/minecraft/resources/ResourceKey" to listOf("net/kyori/adventure/key/Keyed"),
-    )))
 
     depends("minecraft", "~26.4-")
     depends("fabricloader", fabricLoaderRequirement)
@@ -348,14 +331,6 @@ gametest {
     depends("adventure-platform-fabric", "*")
     depends("fabric-api", "*")
   }
-}
-
-// Loom reads the main fabric.mod.json for interface injection, so generate it before sources and on IDE sync
-tasks.withType(GenerateSourcesTask::class).configureEach {
-  dependsOn(tasks.named("mainResourceFactory"))
-}
-rootProject.extensions.getByType<IdeaModel>().project.settings.taskTriggers {
-  afterSync(tasks.named("mainResourceFactory"))
 }
 
 // Workaround for both loom and indra doing publication logic in an afterEvaluate :(
