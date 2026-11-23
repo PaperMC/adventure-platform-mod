@@ -234,6 +234,8 @@ tasks.register("productionClientGameTest", ClientProductionRunTask::class) {
   jvmArgs.add("-Dfabric.client.gametest")
   // Fail instead of waiting on Fabric Loader's error window, which nobody can close under XVFB
   jvmArgs.add("-Dfabric.noGui=true")
+  // Let the game use a software Vulkan device, the only one on machines without a GPU like CI
+  jvmArgs.add("-Drenderpearl.vulkan.allowcpudevice=true")
   runDir = layout.buildDirectory.dir("run/productionClientGameTest")
   // Cut off a hung run instead of letting it use up the CI job
   timeout = Duration.ofMinutes(10)
