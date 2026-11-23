@@ -1,7 +1,7 @@
 /*
  * This file is part of adventure-platform-mod, licensed under the MIT License.
  *
- * Copyright (c) 2023-2026 KyoriPowered
+ * Copyright (c) 2023-2024 KyoriPowered
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,11 +23,15 @@
  */
 package net.kyori.adventure.platform.fabric.impl.compat.permissions;
 
+import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
+import net.kyori.adventure.permission.PermissionChecker;
 import net.kyori.adventure.platform.fabric.CollectPointersCallback;
 import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
 import net.kyori.adventure.util.TriState;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.world.entity.Entity;
 
 public class PermissionsApiIntegration implements ModInitializer {
   private static final ComponentLogger LOGGER = ComponentLogger.logger();
@@ -45,8 +49,17 @@ public class PermissionsApiIntegration implements ModInitializer {
 
   private void registerPermissionHook() {
     CollectPointersCallback.EVENT.register((pointered, consumer) -> {
-      // TODO(26.4): restore command source permission checks once fabric-permissions-api supports 26.4
-      //  (SharedSuggestionProvider no longer exists)
+      if (pointered instanceof Entity e) {
+        consumer.withStatic(
+          PermissionChecker.POINTER,
+          perm -> adaptTristate(Permissions.getPermissionValue(e, perm))
+        );
+      } else if (pointered instanceof SharedSuggestionProvider sourceStack) {
+        consumer.withStatic(
+          PermissionChecker.POINTER,
+          perm -> adaptTristate(Permissions.getPermissionValue(sourceStack, perm))
+        );
+      }
     });
   }
 
