@@ -2,7 +2,6 @@ import java.time.Duration
 import net.fabricmc.loom.task.RunGameTask
 import net.fabricmc.loom.task.prod.ClientProductionRunTask
 import net.fabricmc.loom.task.prod.ServerProductionRunTask
-import io.leangen.geantyref.TypeFactory
 import xyz.jpenilla.resourcefactory.fabric.Environment
 
 plugins {
@@ -258,8 +257,6 @@ tasks {
 
 // Mod metadata
 val fabricLoaderRequirement = ">=${libs.versions.fabricLoader.get()}"
-// Built explicitly, since Kotlin would add wildcards that Configurate cannot serialize
-val stringListMap = TypeFactory.parameterizedClass(Map::class.java, String::class.java, TypeFactory.parameterizedClass(List::class.java, String::class.java))
 
 sourceSets.main {
   resourceFactory.fabricModJson {
@@ -288,8 +285,7 @@ sourceSets.main {
     mixin("adventure-platform-fabric.client.mixins.json") { environment = Environment.CLIENT }
     mixin("adventure-platform-mod-shared.client.mixins.json") { environment = Environment.CLIENT }
 
-    // The map's values are generic, so give the full type, as resource-factory documents for typedSimpleCustomValue
-    custom("modmenu", typedSimpleCustomValue(stringListMap, mapOf("badges" to listOf("library"))))
+    modMenu { library() }
 
     depends("minecraft", "~26.4-")
     depends("fabricloader", fabricLoaderRequirement)

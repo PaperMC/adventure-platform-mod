@@ -76,5 +76,5 @@ indra-checkstyle = { id = "net.kyori.indra.checkstyle" }
 indra-publishing = { id = "net.kyori.indra.publishing" }
 indra-crossdoc = { id = "net.kyori.indra.crossdoc" }
 indra-central = { id = "net.kyori.indra.publishing.central", version.ref = "indra" }
-resourceFactory = { id = "xyz.jpenilla.resource-factory", version = "1.4.0" }
+resourceFactory = { id = "xyz.jpenilla.resource-factory", version = "1.5.0" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
