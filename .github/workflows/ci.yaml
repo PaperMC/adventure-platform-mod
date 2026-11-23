@@ -50,6 +50,8 @@ jobs:
             echo "STATUS=release" >> $GITHUB_ENV
           fi
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: "install software vulkan for the client game tests"
+        run: "sudo apt-get update && sudo apt-get install -y mesa-vulkan-drivers"
       - name: "run game tests against the built jars"
         run: "./gradlew productionServerGameTest productionClientGameTest --stacktrace"
       - name: "publish snapshot"
