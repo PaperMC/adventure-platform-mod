@@ -30,7 +30,7 @@ jobs:
           publishing_branch_regex: '(?:(?:(?:mc\/)?(\d+(?:\.\d+)*(?:\.x)?)))'
           gradle_warning_mode: "all"
       - name: "prime gradle build"
-        run: "./gradlew --no-daemon generateTemplates generateTestmodTemplates --stacktrace" # Bonk loom
+        run: "./gradlew --no-daemon mainResourceFactory testmodResourceFactory --stacktrace" # Bonk loom
       - name: "run gradle build"
         # The game tests run against the built jars in a later step instead
         run: "./gradlew build -x runGameTest -x runClientGameTest --stacktrace"

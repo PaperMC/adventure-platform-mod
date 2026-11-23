@@ -61,7 +61,6 @@ vineflower = { module = "org.vineflower:vineflower", version.ref = "vineflower" 
 build-indra = { module = "net.kyori:indra-common", version.ref = "indra" }
 build-indra-crossdoc = { module = "net.kyori:indra-crossdoc", version.ref = "indra" }
 build-indra-spotless = { module = "net.kyori:indra-licenser-spotless", version.ref = "indra" }
-build-configurate-transformations = { module = "ca.stellardrift:gradle-plugin-configurate", version = "6.2.0" }
 build-idea-ext = { module = "gradle.plugin.org.jetbrains.gradle.plugin.idea-ext:gradle-idea-ext", version = "1.4.1" }
 mod-publish-plugin = { module = "me.modmuss50:mod-publish-plugin", version.ref = "mod-publish-plugin" }
 
@@ -69,7 +68,6 @@ mod-publish-plugin = { module = "me.modmuss50:mod-publish-plugin", version.ref =
 zCheckstyle = { module = "com.puppycrawl.tools:checkstyle", version.ref = "checkstyle" }
 
 [plugins]
-configurateTransformations = { id = "ca.stellardrift.configurate-transformations" }
 # ModDevGradle settings plugin is putting another version on the classpath, so we can't specify a version :(
 ideaExt = { id = "org.jetbrains.gradle.plugin.idea-ext" }
 indra = { id = "net.kyori.indra" }
@@ -78,4 +76,5 @@ indra-checkstyle = { id = "net.kyori.indra.checkstyle" }
 indra-publishing = { id = "net.kyori.indra.publishing" }
 indra-crossdoc = { id = "net.kyori.indra.crossdoc" }
 indra-central = { id = "net.kyori.indra.publishing.central", version.ref = "indra" }
+resourceFactory = { id = "xyz.jpenilla.resource-factory", version = "1.4.0" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

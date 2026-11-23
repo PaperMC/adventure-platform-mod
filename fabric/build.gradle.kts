@@ -3,10 +3,15 @@ import net.fabricmc.loom.task.GenerateSourcesTask
 import net.fabricmc.loom.task.RunGameTask
 import net.fabricmc.loom.task.prod.ClientProductionRunTask
 import net.fabricmc.loom.task.prod.ServerProductionRunTask
+import org.gradle.plugins.ide.idea.model.IdeaModel
+import org.jetbrains.gradle.ext.settings
+import org.jetbrains.gradle.ext.taskTriggers
+import io.leangen.geantyref.TypeFactory
+import xyz.jpenilla.resourcefactory.fabric.Environment
 
 plugins {
   id("net.fabricmc.fabric-loom")
-  alias(libs.plugins.configurateTransformations)
+  alias(libs.plugins.resourceFactory)
   id("standard-conventions")
   id("mod-publishing-conventions")
 }
@@ -253,12 +258,104 @@ tasks {
   }
 }
 
-val generateTemplates = createProcessResourceTemplates("generateTemplates", sourceSets.main.get())
-val generateTestmodTemplates = createProcessResourceTemplates("generateTestmodTemplates", testmod)
-val generateGametestTemplates = createProcessResourceTemplates("generateGametestTemplates", gametest.get())
+// Mod metadata
+val fabricLoaderRequirement = ">=${libs.versions.fabricLoader.get()}"
+// Built explicitly, since Kotlin would add wildcards that Configurate cannot serialize
+val stringListMap = TypeFactory.parameterizedClass(Map::class.java, String::class.java, TypeFactory.parameterizedClass(List::class.java, String::class.java))
 
+sourceSets.main {
+  resourceFactory.fabricModJson {
+    author("kashike")
+    author("zml")
+    author("Luck")
+    author("Electroid")
+    contact {
+      homepage = "https://github.com/PaperMC/adventure-platform-fabric"
+      issues = "https://github.com/PaperMC/adventure-platform-fabric/issues"
+      sources = "https://github.com/PaperMC/adventure-platform-fabric"
+    }
+    mitLicense()
+    icon("assets/adventure-platform-fabric/logo.png")
+
+    mainEntrypoint("net.kyori.adventure.platform.fabric.impl.AdventureFabricCommon")
+    mainEntrypoint("net.kyori.adventure.platform.fabric.impl.compat.permissions.PermissionsApiIntegration")
+    clientEntrypoint("net.kyori.adventure.platform.fabric.impl.client.AdventureFabricClient")
+    entrypoint("adventure-internal:sidedproxy/client", "net.kyori.adventure.platform.modcommon.impl.client.ClientProxy")
+    entrypoint("adventure-internal:sidedproxy/server", "net.kyori.adventure.platform.modcommon.impl.server.DedicatedServerProxy")
+    accessWidener = "adventure-platform-fabric.accesswidener"
+    mixin("adventure-platform-fabric.accessor.mixins.json")
+    mixin("adventure-platform-fabric.mixins.json")
+    mixin("adventure-platform-mod-shared.accessor.mixins.json")
+    mixin("adventure-platform-mod-shared.mixins.json")
+    mixin("adventure-platform-fabric.client.mixins.json") { environment = Environment.CLIENT }
+    mixin("adventure-platform-mod-shared.client.mixins.json") { environment = Environment.CLIENT }
+
+    // The map's values are generic, so give the full type, as resource-factory documents for typedSimpleCustomValue
+    custom("modmenu", typedSimpleCustomValue(stringListMap, mapOf("badges" to listOf("library"))))
+    custom("loom:injected_interfaces", typedSimpleCustomValue(stringListMap, mapOf(
+      "net/minecraft/commands/CommandSourceStack" to listOf("net/kyori/adventure/platform/modcommon/AdventureCommandSourceStack"),
+      "net/minecraft/world/entity/Entity" to listOf("net/kyori/adventure/sound/Sound\$Emitter", "net/kyori/adventure/platform/modcommon/EntityHoverEventSource"),
+      "net/minecraft/server/MinecraftServer" to listOf("net/kyori/adventure/audience/Audience"),
+      "net/minecraft/world/entity/player/Player" to listOf("net/kyori/adventure/platform/modcommon/IdentifiedAtRuntime"),
+      "net/minecraft/server/rcon/RconConsoleSource" to listOf("net/kyori/adventure/audience/Audience"),
+      "net/minecraft/server/level/ServerPlayer" to listOf("net/kyori/adventure/audience/Audience"),
+      "net/minecraft/server/network/ServerConfigurationPacketListenerImpl" to listOf("net/kyori/adventure/audience/Audience"),
+      "net/minecraft/client/player/LocalPlayer" to listOf("net/kyori/adventure/audience/Audience"),
+      "net/minecraft/resources/Identifier" to listOf("net/kyori/adventure/key/Key"),
+      "net/minecraft/sounds/SoundEvent" to listOf("net/kyori/adventure/sound/Sound\$Type"),
+      "net/minecraft/resources/ResourceKey" to listOf("net/kyori/adventure/key/Keyed"),
+    )))
+
+    depends("minecraft", "~26.4-")
+    depends("fabricloader", fabricLoaderRequirement)
+    depends("fabric-api-base", "*")
+    depends("fabric-command-api-v2", "*")
+    recommends("fabric-networking-api-v1", "*")
+  }
+}
+
+testmod.resourceFactory.fabricModJson {
+  id = "${rootProject.name.lowercase()}-testmod"
+  name = "${rootProject.name} Tester"
+  description.unsetConvention()
+  author("zml")
+  contact {
+    homepage = "https://github.com/KyoriPowered/adventure-platform-fabric"
+    issues = "https://github.com/KyoriPowered/adventure-platform-fabric/issues"
+    sources = "https://github.com/KyoriPowered/adventure-platform-fabric"
+  }
+  mitLicense()
+  mainEntrypoint("net.kyori.adventure.platform.test.fabric.AdventureFabricTester")
+  mixin("adventure-platform-fabric-testmod.mixins.json")
+  depends("fabricloader", fabricLoaderRequirement)
+  depends("adventure-platform-fabric", "*")
+  depends("fabric-api", "*")
+}
+
+gametest {
+  resourceFactory.fabricModJson {
+    id = "${project.name}-gametest"
+    name = "${project.name} game tests"
+    description.unsetConvention()
+    mitLicense()
+    mainEntrypoint("net.kyori.adventure.platform.test.fabric.gametest.AdventureGameTestMod")
+    entrypoint("fabric-client-gametest", "net.kyori.adventure.platform.test.fabric.gametest.client.AdventureClientGameTest")
+    entrypoint("fabric-gametest", "net.kyori.adventure.platform.test.fabric.gametest.server.CommandSourceGameTests")
+    entrypoint("fabric-gametest", "net.kyori.adventure.platform.test.fabric.gametest.server.ConversionGameTests")
+    entrypoint("fabric-gametest", "net.kyori.adventure.platform.test.fabric.gametest.server.MixinAuditGameTest")
+    mixin("adventure-platform-fabric-gametest.mixins.json")
+    depends("fabricloader", fabricLoaderRequirement)
+    depends("adventure-platform-fabric", "*")
+    depends("fabric-api", "*")
+  }
+}
+
+// Loom reads the main fabric.mod.json for interface injection, so generate it before sources and on IDE sync
 tasks.withType(GenerateSourcesTask::class).configureEach {
-  dependsOn(generateTemplates, generateTestmodTemplates, generateGametestTemplates)
+  dependsOn(tasks.named("mainResourceFactory"))
+}
+rootProject.extensions.getByType<IdeaModel>().project.settings.taskTriggers {
+  afterSync(tasks.named("mainResourceFactory"))
 }
 
 // Workaround for both loom and indra doing publication logic in an afterEvaluate :(
