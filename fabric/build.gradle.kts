@@ -275,7 +275,9 @@ sourceSets.main {
     icon("assets/adventure-platform-fabric/logo.png")
 
     mainEntrypoint("net.kyori.adventure.platform.fabric.impl.AdventureFabricCommon")
-    mainEntrypoint("net.kyori.adventure.platform.fabric.impl.compat.permissions.PermissionsApiIntegration")
+    if (enablePermissionsApiCompat) {
+      mainEntrypoint("net.kyori.adventure.platform.fabric.impl.compat.permissions.PermissionsApiIntegration")
+    }
     clientEntrypoint("net.kyori.adventure.platform.fabric.impl.client.AdventureFabricClient")
     entrypoint("adventure-internal:sidedproxy/client", "net.kyori.adventure.platform.modcommon.impl.client.ClientProxy")
     entrypoint("adventure-internal:sidedproxy/server", "net.kyori.adventure.platform.modcommon.impl.server.DedicatedServerProxy")
