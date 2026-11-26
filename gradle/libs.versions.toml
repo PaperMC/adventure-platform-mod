@@ -40,7 +40,7 @@ zNeoform = { module = "net.neoforged:neoform", version.ref = "neoform" }
 # fabric
 fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabricLoader"}
 fabric-loader-junit = { module = "net.fabricmc:fabric-loader-junit", version.ref = "fabricLoader"}
-fabric-permissionsApi = { module = "me.lucko:fabric-permissions-api", version = "0.7.0" }
+fabric-permissionsApi = { module = "me.lucko:fabric-permissions-api", version = "0.7.2" }
 minecraft = { module = "com.mojang:minecraft", version.ref = "minecraft" }
 
 # neoforge

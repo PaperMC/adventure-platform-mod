@@ -107,9 +107,7 @@ tasks.check {
   dependsOn("runClientGameTest")
 }
 
-// TODO(26.4): re-enable once PermissionChecker supports Identifier-keyed permissions
-//  https://github.com/PaperMC/adventure/issues/1457
-val enablePermissionsApiCompat = false
+val enablePermissionsApiCompat = true
 val permissionsApiCompat = if (enablePermissionsApiCompat) createSecondarySet("permissionsApiCompat") else createSecondarySet("dummyPermissionsApiCompat")
 
 configurations.named("clientAnnotationProcessor") {
