@@ -56,7 +56,6 @@ public abstract class CommandSourceStackMixin implements AdventureCommandSourceS
   @Shadow @Final private boolean silent;
   @Shadow @Final private MinecraftServer server;
 
-  @Shadow protected abstract void shadow$broadcastToAdmins(net.minecraft.network.chat.Component text);
   @Shadow public abstract void shadow$sendSuccess(Supplier<net.minecraft.network.chat.Component> text, boolean sendToOps);
   // @formatter:on
 
